@@ -47,7 +47,7 @@ int ServerSocket::bind(bool reuseAddress)
   }
 
   int rc = ::bind(this->socketDescriptor, this->info->ai_addr,
-  this->info->ai_addrlen);
+                  this->info->ai_addrlen);
 
   if( rc == -1)
     throw std::runtime_error(std::string("Erro em bind: ") + strerror(errno));
@@ -60,7 +60,7 @@ int ServerSocket::listen(const int backlog)
   int rc = ::listen(this->socketDescriptor, backlog);
 
   if( rc == -1)
-  throw std::runtime_error(std::string("Erro em listen: ") + strerror(errno));
+    throw std::runtime_error(std::string("Erro em listen: ") + strerror(errno));
 
   return rc;
 }
@@ -70,12 +70,23 @@ SocketWrapper* ServerSocket::accept(const int poolSize)
   socklen_t endpointSize = sizeof(this->endpoint);
 
   int newDescriptor = ::accept(this->socketDescriptor,
-    (struct sockaddr *)&endpoint, &endpointSize);
+                              (struct sockaddr *)&endpoint, &endpointSize);
 
   if(newDescriptor == -1)
     throw std::runtime_error(std::string("Erro em accept: ") + strerror(errno));
 
-  return new SocketWrapper(newDescriptor, this->port, poolSize);
+  SocketWrapper *newSocket = NULL;
+
+  try
+  {
+    new SocketWrapper(newDescriptor, this->port, poolSize);
+  }
+  catch (std::exception e)
+  {
+    std::cout << "Erro na alocacao de memoria do novo Socket apos accept!";
+    throw e;
+  }
+  return
 }
 
 int ServerSocket::add(SocketWrapper *socket, int events)
