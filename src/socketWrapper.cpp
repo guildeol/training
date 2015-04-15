@@ -5,87 +5,30 @@
 #include <cerrno>
 #include <cstdio>
 
-SocketWrapper::SocketWrapper(const std::string *address, int poolSize,
-                             char *port, int maxDescriptors)
+SocketWrapper::SocketWrapper(const std::string *address, char *port,
+                             addrinfo *hints, int poolSize)
 {
-  // Definindo o socket para responder ao padrão IPV4 ou IPV6, e utilizar TCP.
-  memset(&this->hints, 0, sizeof this->hints);
-  this->hints.ai_family = AF_UNSPEC;
-  this->hints.ai_socktype = SOCK_STREAM;
-
-  if(port)
-    this->port = port;
-  else
-    throw std::runtime_error(std::string("Porta Nula!"));
-
-  int rc = 0;
-
-  if (address)
-    rc = getaddrinfo(address->c_str(), this->port, &this->hints, &this->info);
-  else
-    rc = getaddrinfo(NULL, this->port, &this->hints, &this->info);
-
-  if (rc != 0)
-    throw std::runtime_error(std::string("Erro em getaddrinfo: ")
-                             + gai_strerror(rc));
-
-  addrinfo *r = this->info;
-
-  socketDescriptor = socket(r->ai_family, r->ai_socktype, r->ai_protocol);
-
-  if (this->socketDescriptor == -1)
-    throw std::runtime_error(std::string("Erro na criacao do descritor: ")
-                             + strerror(errno));
-
-  if (poolSize > 0)
+  if (!hints)
   {
-    try
-    {
-      this->pool = new char[poolSize];
-    }
-    catch(std::exception e)
-    {
-      std::cout << "Erro na alocacao de memoria do pool!";
-      throw e;
-    }
-    this->poolSize = poolSize;
+    // Definindo o socket para responder ao padrão IPV4 ou IPV6, e utilizar TCP.
+    memset(this->hints, 0, sizeof(addrinfo));
+    this->hints->ai_family = AF_UNSPEC;
+    this->hints->ai_socktype = SOCK_STREAM;
   }
 
-  if (maxDescriptors > 0)
-  {
-    try
-    {
-      this->descriptors = new struct pollfd[maxDescriptors];
-    }
-    catch(std::exception e)
-    {
-      std::cout << "Erro na alocacao de memoria do vetor de descritores!";
-      throw e;
-    }
-
-    for (int i = 0; i < maxDescriptors; i++)
-      this->descriptors[i].fd = -1;
-
-    this->maxDescriptors = maxDescriptors;
-  }
-}
-
-SocketWrapper::SocketWrapper(const std::string *address, const addrinfo &hints,
-                             int poolSize, char *port, int maxDescriptors)
-{
   this->hints = hints;
 
-  if(port)
-    this->port = port;
-  else
+  if(!port)
     throw std::runtime_error(std::string("Porta Nula!"));
+
+  this->port = port;
 
   int rc = 0;
 
   if (address)
-    rc = getaddrinfo(address->c_str(), this->port, &this->hints, &this->info);
+    rc = getaddrinfo(address->c_str(), this->port, this->hints, &this->info);
   else
-    rc = getaddrinfo(NULL, this->port, &this->hints, &this->info);
+    rc = getaddrinfo(NULL, this->port, this->hints, &this->info);
 
   if (rc != 0)
     throw std::runtime_error(std::string("Erro em getaddrinfo: ")
@@ -93,7 +36,7 @@ SocketWrapper::SocketWrapper(const std::string *address, const addrinfo &hints,
 
   addrinfo *r = this->info;
 
-  socketDescriptor = socket(r->ai_family, r->ai_socktype, r->ai_protocol);
+  this->socketDescriptor = socket(r->ai_family, r->ai_socktype, r->ai_protocol);
 
   if (this->socketDescriptor == -1)
     throw std::runtime_error(std::string("Erro na criacao do descritor: ")
@@ -111,24 +54,6 @@ SocketWrapper::SocketWrapper(const std::string *address, const addrinfo &hints,
         throw e;
     }
     this->poolSize = poolSize;
-  }
-
-  if (maxDescriptors > 0)
-  {
-    try
-    {
-      this->descriptors = new struct pollfd[maxDescriptors];
-    }
-    catch(std::exception e)
-    {
-      std::cout << "Erro na alocacao de memoria do vetor de descritores!";
-      throw e;
-    }
-
-    for (int i = 0; i < maxDescriptors; i++)
-      this->descriptors[i].fd = -1;
-
-    this->maxDescriptors = maxDescriptors;
   }
 }
 
@@ -296,164 +221,11 @@ int SocketWrapper::receive(char *buffer, int length, int flags)
   return rc;
 }
 
-int SocketWrapper::bind(bool reuseAddress)
-{
-  //Setando opcao para reutilizar o endereço
-  if (reuseAddress)
-  {
-    int yes = 1;
-    setsockopt(this->socketDescriptor, SOL_SOCKET, SO_REUSEADDR, &yes,
-               sizeof(int));
-  }
-  int rc = ::bind(this->socketDescriptor, this->info->ai_addr,
-                  this->info->ai_addrlen);
-
-  if( rc == -1)
-    throw std::runtime_error(std::string("Erro em bind: ") + strerror(errno));
-
-  return rc;
-}
-
-int SocketWrapper::listen(const int backlog)
-{
-  int rc = ::listen(this->socketDescriptor, backlog);
-
-  if( rc == -1)
-    throw std::runtime_error(std::string("Erro em listen: ") + strerror(errno));
-
-  return rc;
-}
-
-SocketWrapper* SocketWrapper::accept(const int poolSize)
-{
-  socklen_t endpointSize = sizeof(this->endpoint);
-
-  int newDescriptor = ::accept(this->socketDescriptor,
-                              (struct sockaddr *)&endpoint, &endpointSize);
-
-  if(newDescriptor == -1)
-    throw std::runtime_error(std::string("Erro em accept: ") + strerror(errno));
-
-  return new SocketWrapper(newDescriptor, this->port, poolSize);
-}
-
-int SocketWrapper::add(SocketWrapper *socket, int events)
-{
-  if(socket == NULL)
-    throw std::invalid_argument("Erro: socket não pode ser nulo em add!");
-
-  if(this->currentDescriptors >= this->maxDescriptors)
-    throw std::length_error("Erro: numero maximo de descritores alcancado.");
-
-  for (int i = 0; i < this->maxDescriptors; i++)
-  {
-    if (this->descriptors[i].fd == -1)
-    {
-      this->descriptors[i].fd = socket->socketDescriptor;
-      this->descriptors[i].events = events;
-      this->descriptors[i].revents = 0;
-      break;
-    }
-  }
-
-  this->currentDescriptors++;
-
-  return 0;
-}
-
-int SocketWrapper::remove(SocketWrapper *socket)
-{
-  if(socket == NULL)
-    throw std::invalid_argument("Erro: socket não pode ser nulo em remove!");
-
-  if(this->currentDescriptors <= 0)
-    throw std::length_error("Erro: lista de descritores vazia.");
-
-  for (int i = 0; i < this->maxDescriptors; i++)
-  {
-    if (socket->socketDescriptor == this->descriptors[i].fd)
-      this->descriptors[i].fd = -1;
-  }
-
-  this->currentDescriptors--;
-
-  return 0;
-}
-
-int SocketWrapper::poll(int timeout)
-{
-  int rc = ::poll(this->descriptors, this->maxDescriptors, timeout);
-
-  if(rc == -1)
-    throw std::runtime_error(std::string("Erro em poll: ") + strerror(errno));
-
-  return rc;
-}
-
-bool SocketWrapper::canRead(SocketWrapper *socket)
-{
-  if(socket == NULL)
-    throw std::invalid_argument("Erro: socket não pode ser nulo em canRead!");
-
-    for (int i = 0; i < this->maxDescriptors; i++)
-    {
-      if (socket->socketDescriptor == this->descriptors[i].fd)
-      {
-        if (this->descriptors[i].revents & POLLIN)
-          return true;
-
-        break;
-      }
-    }
-
-    return false;
-}
-
-bool SocketWrapper::canSend(SocketWrapper *socket)
-{
-  if(socket == NULL)
-    throw std::invalid_argument("Erro: socket não pode ser nulo em canRead!");
-
-    for (int i = 0; i < this->maxDescriptors; i++)
-    {
-      if (socket->socketDescriptor == this->descriptors[i].fd)
-      {
-        if (this->descriptors[i].revents & POLLOUT)
-          return true;
-
-        break;
-      }
-    }
-
-    return false;
-}
-
-SocketWrapper::SocketWrapper(int socketDescriptor, char *port, int poolSize)
-{
-  this->socketDescriptor = socketDescriptor;
-  this->port = port;
-
-  try
-  {
-    this->pool = new char[poolSize];
-  }
-  catch(std::exception e)
-  {
-    std::cout << "Erro na alocacao de memoria do pool!";
-    throw e;
-  }
-
-  this->poolSize = poolSize;
-}
-
 SocketWrapper::~SocketWrapper()
 {
 
   if(this->pool)
     delete[] pool;
-
-  if(this->maxDescriptors)
-    delete[] descriptors;
 
   if(info)
     freeaddrinfo(this->info);

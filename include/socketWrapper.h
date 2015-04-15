@@ -31,39 +31,19 @@
  */
 class SocketWrapper
 {
-
-public:
-  /*!
-   * Construtor da classe, prepara as estruturas
-   * necessarias para conexao atraves do socket
-   * utilizando por padrao conexao TCP e a porta 80.
-   * \param[in] address endereco do servidor desejado.
-   * \param[in] poolSize tamanho do pool que deve ser reservado para leitura.
-   * \param[in] port Numero da porta na qual a socket deve se comunicar
-   * \param[in] maxDescriptors Quantidade de descritores que pode ser "vigiada"
-                com poll().
-   * \throw runtime_error ao chamar socket.
-   * \throw runtime_error ao chamar getaddrinfo.
-   * \throw bad_alloc caso a alocação de pool falhar.
-   */
-  SocketWrapper(const std::string *address, int poolSize = 0,
-                char *port = "80", int maxDescriptors = 0);
-
   /*!
    * Construtor com parametro adicional para
    * especificacao do comportamento do socket.
    * \param[in] address endereco do servidor desejado.
    * \param[in] hints struct com parametros para criacao do socket.
-   * \param[in] poolSize tamanho do pool que deve ser reservado para leitura.
    * \param[in] port Numero da porta na qual a socket deve se comunicar
-   * \param[in] maxDescriptors Quantidade de descritores que pode ser "vigiada"
-                com poll().
+   * \param[in] poolSize tamanho do pool que deve ser reservado para leitura.
    * \throw runtime_error ao chamar socket.
    * \throw runtime_error ao chamar getaddrinfo.
    * \throw bad_alloc caso a alocação de pool falhar.
    */
-  SocketWrapper(const std::string *address, const addrinfo &hints,
-                int poolSize = 0, char *port = "80", int maxDescriptors = 0);
+  SocketWrapper(const std::string *address, char *port = "80",
+                addrinfo *hints = NULL, int poolSize = 0);
 
   /*Destrutor. Libera recursos alocados.*/
   ~SocketWrapper();
@@ -110,7 +90,7 @@ public:
 private:
 
   int socketDescriptor; /*!< Descritor do socket.*/
-  struct addrinfo hints; /*!< Utilizada para configuração do socket.*/
+  struct addrinfo *hints = NULL; /*!< Utilizada para configuração do socket.*/
   struct addrinfo *info = NULL; /*!< Guarda resultado do getaddrinfo().*/
 
   struct sockaddr_storage endpoint; /*!< Utilizado em accept().*/
