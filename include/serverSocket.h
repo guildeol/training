@@ -10,7 +10,6 @@
 #ifndef SERVERSOCKET_H
 #define SERVERSOCKET_H
 
-/* types.h Utilizado por compatibilidade (ver notas em man socket).*/
 #include <socketWrapper.h>
 #include <poll.h>
 
@@ -38,8 +37,8 @@ public:
    * \throw runtime_error ao chamar getaddrinfo.
    * \throw bad_alloc caso a alocação de pool falhar.
    */
-  ServerSocket(const std::string *address, char *port = "80", int poolSize = 0,
-               int maxDescriptors = 0);
+  ServerSocket(const std::string *address, char *port, const addrinfo &hints,
+                int poolSize = 0, int maxDescriptors = 0);
 
   ~ServerSocket();
 
@@ -117,9 +116,6 @@ public:
   int poll(int timeout = -1);
 
 private:
-
-  /* Construtor privado, utilizado somente em accept!*/
-  ServerSocket(int socketDescriptor, char *port, int poolSize);
 
   struct sockaddr_storage endpoint; /*!< Utilizado em accept().*/
 

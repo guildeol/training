@@ -25,12 +25,17 @@
 
 #include <string>
 
+//Declaração adiantada de ServerSocket, para usar com friend
+class ServerSocket;
+
 /*!
  * \class SocketWrapper
  * \brief Wrapper para as funcoes da biblioteca de sockets em C.
  */
 class SocketWrapper
 {
+friend class ServerSocket;
+
 public:
   /*!
    * Construtor com parametro adicional para
@@ -88,7 +93,7 @@ public:
   */
   int readAll(char *buffer, int length);
 
-private:
+protected:
 
   int socketDescriptor; /*!< Descritor do socket.*/
   struct addrinfo hints; /*!< Utilizada para configuração do socket.*/
@@ -103,6 +108,11 @@ private:
   unsigned int end = 0; /*!< Variavel para controle de leitura de pool*/
   bool hasData = false; /*!< Variavel para indicar se ha dados disponiveis no
                              pool.*/
+
+private:
+
+  /* Construtor privado, utilizado em accept.*/
+  SocketWrapper(int socketDescriptor, char *port, int poolSize);
 };
 
 #endif

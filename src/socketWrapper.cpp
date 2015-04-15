@@ -47,7 +47,24 @@ SocketWrapper::SocketWrapper(const std::string *address, char *port,
     }
     this->poolSize = poolSize;
   }
+}
 
+SocketWrapper::SocketWrapper(int socketDescriptor, char *port, int poolSize)
+{
+  this->socketDescriptor = socketDescriptor;
+  this->port = port;
+
+  try
+  {
+    this->pool = new char[poolSize];
+  }
+  catch(std::exception e)
+  {
+    std::cout << "Erro na alocacao de memoria do pool!";
+    throw e;
+  }
+
+  this->poolSize = poolSize;
 }
 
 int SocketWrapper::readLine(char *buffer, int length)
