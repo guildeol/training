@@ -6,16 +6,8 @@
 #include <cstdio>
 
 SocketWrapper::SocketWrapper(const std::string *address, char *port,
-                             addrinfo *hints, int poolSize)
+                             const addrinfo &hints, int poolSize)
 {
-  if (!hints)
-  {
-    // Definindo o socket para responder ao padrão IPV4 ou IPV6, e utilizar TCP.
-    memset(this->hints, 0, sizeof(addrinfo));
-    this->hints->ai_family = AF_UNSPEC;
-    this->hints->ai_socktype = SOCK_STREAM;
-  }
-
   this->hints = hints;
 
   if(!port)
@@ -26,9 +18,9 @@ SocketWrapper::SocketWrapper(const std::string *address, char *port,
   int rc = 0;
 
   if (address)
-    rc = getaddrinfo(address->c_str(), this->port, this->hints, &this->info);
+    rc = getaddrinfo(address->c_str(), this->port, &this->hints, &this->info);
   else
-    rc = getaddrinfo(NULL, this->port, this->hints, &this->info);
+    rc = getaddrinfo(NULL, this->port, &this->hints, &this->info);
 
   if (rc != 0)
     throw std::runtime_error(std::string("Erro em getaddrinfo: ")
@@ -55,6 +47,7 @@ SocketWrapper::SocketWrapper(const std::string *address, char *port,
     }
     this->poolSize = poolSize;
   }
+
 }
 
 int SocketWrapper::readLine(char *buffer, int length)

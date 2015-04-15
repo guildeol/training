@@ -121,6 +121,8 @@ private:
   /* Construtor privado, utilizado somente em accept!*/
   ServerSocket(int socketDescriptor, char *port, int poolSize);
 
+  struct sockaddr_storage endpoint; /*!< Utilizado em accept().*/
+
   /*!
   * Array de structs utilizado em poll. Deve ser mantido pelo
   * listerner/servidor.

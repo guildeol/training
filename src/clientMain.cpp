@@ -105,7 +105,18 @@ int main(int argc, char *argv[])
 
   try
   {
-    clientSocket = new SocketWrapper(&address, 1024);
+
+    char *port = "80";
+    addrinfo hints;
+
+    // Definindo o socket para responder ao padrão IPV4 ou IPV6, e utilizar TCP.
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+
+    const int poolSize = 1024;
+
+    clientSocket = new SocketWrapper(&address, port, hints, poolSize);
 
     clientSocket->connect();
 

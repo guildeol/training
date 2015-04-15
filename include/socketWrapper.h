@@ -31,6 +31,7 @@
  */
 class SocketWrapper
 {
+public:
   /*!
    * Construtor com parametro adicional para
    * especificacao do comportamento do socket.
@@ -42,8 +43,8 @@ class SocketWrapper
    * \throw runtime_error ao chamar getaddrinfo.
    * \throw bad_alloc caso a alocação de pool falhar.
    */
-  SocketWrapper(const std::string *address, char *port = "80",
-                addrinfo *hints = NULL, int poolSize = 0);
+  SocketWrapper(const std::string *address, char *port, const addrinfo &hints,
+                const int poolSize = 0);
 
   /*Destrutor. Libera recursos alocados.*/
   ~SocketWrapper();
@@ -90,10 +91,8 @@ class SocketWrapper
 private:
 
   int socketDescriptor; /*!< Descritor do socket.*/
-  struct addrinfo *hints = NULL; /*!< Utilizada para configuração do socket.*/
+  struct addrinfo hints; /*!< Utilizada para configuração do socket.*/
   struct addrinfo *info = NULL; /*!< Guarda resultado do getaddrinfo().*/
-
-  struct sockaddr_storage endpoint; /*!< Utilizado em accept().*/
 
   char *port; /*!< Porta com a qual o socket se comunica.*/
 
