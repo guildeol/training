@@ -79,15 +79,23 @@ SocketWrapper* ServerSocket::accept(const int poolSize)
 
   try
   {
+<<<<<<< HEAD
     newSocket = new SocketWrapper(newDescriptor, this->port, poolSize);
+=======
+    new SocketWrapper(newDescriptor, this->port, poolSize);
+>>>>>>> fdff228d349d40453a93cd2fb41c2884cca1dbaa
   }
   catch (std::exception e)
   {
     std::cout << "Erro na alocacao de memoria do novo Socket apos accept!";
     throw e;
   }
+<<<<<<< HEAD
 
   return newSocket;
+=======
+  return
+>>>>>>> fdff228d349d40453a93cd2fb41c2884cca1dbaa
 }
 
 int ServerSocket::add(SocketWrapper *socket, int events)
