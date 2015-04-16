@@ -1,5 +1,6 @@
 #include <socket.h>
 #include <serverSocket.h>
+#include <httpInterface.h>
 
 #include <iostream>
 #include <vector>
@@ -23,7 +24,7 @@ int main(int argc, char *argv[])
 
   try
   {
-    string *request;
+    string request;
 
     char *port = "8080";
     int poolSize = 1024;
@@ -77,7 +78,12 @@ int main(int argc, char *argv[])
 
           buffer[rc + 1] = '\0';
 
-          cout << buffer;
+          request.assign(buffer);
+
+          HTTPInterface *analyser = new HTTPInterface(request);
+
+          cout << analyser->method + " " + analyser->resource + " " +
+                  analyser->protocol;
 
           do
           {

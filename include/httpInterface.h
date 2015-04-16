@@ -18,10 +18,7 @@ class HTTPInterface
 {
 public:
 
-  HTTPInterface();
-  ~HTTPInterface();
-
-  int parseRequest(std::string request);
+  HTTPInterface(std::string &request);
 
   int respond(int code, Socket &socket);
 
