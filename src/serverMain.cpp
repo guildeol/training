@@ -8,6 +8,8 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
+  int rc = 0;
+
   struct addrinfo hints;
 
   ServerSocket *server = NULL;
@@ -19,10 +21,10 @@ int main(int argc, char *argv[])
 
   char buffer[1024];
 
-  // int rc = 0;
-
   try
   {
+    string *request;
+
     char *port = "8080";
     int poolSize = 1024;
 
@@ -67,20 +69,40 @@ int main(int argc, char *argv[])
       {
         if (server->canRead(connected[i]))
         {
-          int rc = connected[i]->receive(buffer, poolSize);
+          // Pegar a requisição HTTP
+          rc = connected[i]->readLine(buffer, poolSize);
 
-          cout.write(buffer,rc);
-          cout.flush();
+          if(rc <= 0)
+            break;
+
+          buffer[rc + 1] = '\0';
+
+          cout << buffer;
+
+          do
+          {
+            rc = connected[i]->readLine(buffer, poolSize);
+
+            if(rc <= 0)
+              break;
+
+            buffer[rc + 1] = '\0';
+
+            cout << buffer;
+          } while (strcmp(buffer, "\r\n"));
+
+          if (server->canSend(connected[i]))
+          {
+            connected[i]->send("Aqui esta sua resposta!\n");
+          }
+
+          cout << "Fim!" << endl;
+
+          //Terminou a requisicao do cliente
+          server->remove(connected[i]);
+          connected.erase(connected.begin() + i);
+          delete connected[i];
         }
-
-        // if (server->canSend(connected[i]))
-        // {
-        //   connected[i]->send("Hey there!\n");
-        //
-        //   server->remove(connected[i]);
-        //   connected.erase(connected.begin() + i);
-        //   delete connected[i];
-        // }
       }
     }
   }
