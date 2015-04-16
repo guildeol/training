@@ -1,18 +1,19 @@
-#include <socketWrapper.h>
+#include <socket.h>
 #include <serverSocket.h>
 
 #include <iostream>
+#include <list>
 
 using namespace std;
 
 int main(int argc, char *argv[])
 {
-  const int backlog = 10;
-
   struct addrinfo hints;
 
   ServerSocket *server = NULL;
-  SocketWrapper *newSocket = NULL;
+  Socket *newSocket = NULL;
+
+  const int backlog = 10;
 
   // char buffer[1024];
   // int rc = 0;
@@ -64,7 +65,7 @@ int main(int argc, char *argv[])
   if(newSocket)
     delete newSocket;
 
-  
+
 
   return 0;
 }

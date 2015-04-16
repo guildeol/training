@@ -1,11 +1,11 @@
 #include <iostream>
-#include <socketWrapper.h>
+#include <socket.h>
 #include <stdexcept>
 
 #include <cerrno>
 #include <cstdio>
 
-SocketWrapper::SocketWrapper(const std::string *address, char *port,
+Socket::Socket(const std::string *address, char *port,
                              const addrinfo &hints, int poolSize)
 {
   this->hints = hints;
@@ -49,7 +49,7 @@ SocketWrapper::SocketWrapper(const std::string *address, char *port,
   }
 }
 
-SocketWrapper::SocketWrapper(int socketDescriptor, char *port, int poolSize)
+Socket::Socket(int socketDescriptor, char *port, int poolSize)
 {
   this->socketDescriptor = socketDescriptor;
   this->port = port;
@@ -67,7 +67,7 @@ SocketWrapper::SocketWrapper(int socketDescriptor, char *port, int poolSize)
   this->poolSize = poolSize;
 }
 
-int SocketWrapper::readLine(char *buffer, int length)
+int Socket::readLine(char *buffer, int length)
 {
   if (!this->pool)
   {
@@ -142,7 +142,7 @@ int SocketWrapper::readLine(char *buffer, int length)
   return i;
 }
 
-int SocketWrapper::readAll(char *buffer, int length)
+int Socket::readAll(char *buffer, int length)
 {
   if (!this->pool)
   {
@@ -198,7 +198,7 @@ int SocketWrapper::readAll(char *buffer, int length)
   return i;
 }
 
-void SocketWrapper::connect()
+void Socket::connect()
 {
   addrinfo *r = this->info;
 
@@ -211,7 +211,7 @@ void SocketWrapper::connect()
 
 }
 
-int SocketWrapper::send(const std::string buffer, int flags)
+int Socket::send(const std::string buffer, int flags)
 {
   int rc = ::send(this->socketDescriptor, buffer.c_str(), buffer.size(), flags);
 
@@ -221,7 +221,7 @@ int SocketWrapper::send(const std::string buffer, int flags)
   return rc;
 }
 
-int SocketWrapper::receive(char *buffer, int length, int flags)
+int Socket::receive(char *buffer, int length, int flags)
 {
   int rc = ::recv(this->socketDescriptor, buffer, length, flags);
 
@@ -231,7 +231,7 @@ int SocketWrapper::receive(char *buffer, int length, int flags)
   return rc;
 }
 
-SocketWrapper::~SocketWrapper()
+Socket::~Socket()
 {
 
   if(this->pool)

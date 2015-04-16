@@ -7,7 +7,7 @@
 #include <iostream>
 #include <fstream>
 
-#include <socketWrapper.h>
+#include <socket.h>
 
 #include <sys/stat.h>
 #include <string>
@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
   bool overwrite = false;
 
   ofstream destination;
-  SocketWrapper *clientSocket = NULL;
+  Socket *clientSocket = NULL;
 
   int i = 0;
 
@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
 
     const int poolSize = 1024;
 
-    clientSocket = new SocketWrapper(&address, port, hints, poolSize);
+    clientSocket = new Socket(&address, port, hints, poolSize);
 
     clientSocket->connect();
 

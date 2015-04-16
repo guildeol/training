@@ -8,7 +8,7 @@
 ServerSocket::ServerSocket(const std::string *address, char *port,
                            const addrinfo &hints, int poolSize,
                            int maxDescriptors):
-  SocketWrapper(address, port, hints, poolSize)
+  Socket(address, port, hints, poolSize)
 {
   if (maxDescriptors > 0)
   {
@@ -65,7 +65,7 @@ int ServerSocket::listen(const int backlog)
   return rc;
 }
 
-SocketWrapper* ServerSocket::accept(const int poolSize)
+Socket* ServerSocket::accept(const int poolSize)
 {
   socklen_t endpointSize = sizeof(this->endpoint);
 
@@ -75,11 +75,11 @@ SocketWrapper* ServerSocket::accept(const int poolSize)
   if(newDescriptor == -1)
     throw std::runtime_error(std::string("Erro em accept: ") + strerror(errno));
 
-  SocketWrapper *newSocket = NULL;
+  Socket *newSocket = NULL;
 
   try
   {
-    newSocket = new SocketWrapper(newDescriptor, this->port, poolSize);
+    newSocket = new Socket(newDescriptor, this->port, poolSize);
   }
   catch (std::exception e)
   {
@@ -90,7 +90,7 @@ SocketWrapper* ServerSocket::accept(const int poolSize)
   return newSocket;
 }
 
-int ServerSocket::add(SocketWrapper *socket, int events)
+int ServerSocket::add(Socket *socket, int events)
 {
   if(socket == NULL)
   throw std::invalid_argument("Erro: socket não pode ser nulo em add!");
@@ -114,7 +114,7 @@ int ServerSocket::add(SocketWrapper *socket, int events)
   return 0;
 }
 
-int ServerSocket::remove(SocketWrapper *socket)
+int ServerSocket::remove(Socket *socket)
 {
   if(socket == NULL)
     throw std::invalid_argument("Erro: socket não pode ser nulo em remove!");
@@ -143,7 +143,7 @@ int ServerSocket::poll(int timeout)
   return rc;
 }
 
-bool ServerSocket::canRead(SocketWrapper *socket)
+bool ServerSocket::canRead(Socket *socket)
 {
   if(socket == NULL)
     throw std::invalid_argument("Erro: socket não pode ser nulo em canRead!");
@@ -162,7 +162,7 @@ bool ServerSocket::canRead(SocketWrapper *socket)
   return false;
 }
 
-bool ServerSocket::canSend(SocketWrapper *socket)
+bool ServerSocket::canSend(Socket *socket)
 {
   if(socket == NULL)
     throw std::invalid_argument("Erro: socket não pode ser nulo em canRead!");

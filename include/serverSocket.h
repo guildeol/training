@@ -1,7 +1,7 @@
 /*!
 * \file serverSocket.h
 * \brief Cabecalho para classe com funcionalidades para criacao de servidor
-*        utilizando como base SocketWrapper.
+*        utilizando como base Socket.
 *
 * \date 15/04/2015
 * \author Guilherme Costa <glhrmcosta91@gmail.com>
@@ -10,7 +10,7 @@
 #ifndef SERVERSOCKET_H
 #define SERVERSOCKET_H
 
-#include <socketWrapper.h>
+#include <socket.h>
 #include <poll.h>
 
 #include <string>
@@ -20,7 +20,7 @@
 * \class ServerSocket
 */
 
-class ServerSocket : public SocketWrapper
+class ServerSocket : public Socket
 {
 
 public:
@@ -62,30 +62,30 @@ public:
   /*!
   * \brief Aceita uma conexão pendente
   * \param[in] poolSize Tamanho do pool do novo socket a ser retornado
-  * \return Retorna um novo SocketWrapper para comunicação em caso de sucesso
+  * \return Retorna um novo Socket para comunicação em caso de sucesso
   * \throw runtime_error caso accept falhe
   */
-  SocketWrapper* accept(const int poolSize = 0);
+  Socket* accept(const int poolSize = 0);
 
   /*!
   * \brief Adiciona o descritor de socket à lista de descritores "vigiados"
   por poll.
   * \param[in] socket Socket que terá seu descritor adicionado.
-  * \return Retorna um novo SocketWrapper para comunicação em caso de sucesso
+  * \return Retorna um novo Socket para comunicação em caso de sucesso
   * \throw invalid_argument caso socket seja nulo.
   * \throw length_error caso o limite de descritores tenha sido alcancado.
   */
-  int add(SocketWrapper *socket, int events);
+  int add(Socket *socket, int events);
 
   /*!
   * \brief Remove o descritor de socket da lista de descritores "vigiados"
   por poll.
   * \param[in] socket Socket que terá seu descritor removido.
-  * \return Retorna um novo SocketWrapper para comunicação em caso de sucesso
+  * \return Retorna um novo Socket para comunicação em caso de sucesso
   * \throw invalid_argument caso socket seja nulo.
   * \throw length_error caso não exista mais nenhum descritor a ser removido.
   */
-  int remove(SocketWrapper *socket);
+  int remove(Socket *socket);
 
   /*!
   * \brief Avalia o resultado de poll para saber se um socket esta apto a receber
@@ -94,7 +94,7 @@ public:
   * \return true se o socket estiver apto, false caso contrario.
   * \throw invalid_argument caso socket seja nulo.
   */
-  bool canSend(SocketWrapper *socket);
+  bool canSend(Socket *socket);
 
   /*!
   * \brief Avalia o resultado de poll para saber se um socket possui dados
@@ -103,7 +103,7 @@ public:
   * \return true se o socket estiver possuir dados, false caso contrario.
   * \throw invalid_argument caso socket seja nulo.
   */
-  bool canRead(SocketWrapper *socket);
+  bool canRead(Socket *socket);
 
   /*!
   * \brief Realiza o poll dos descritores contidos em descriptors.

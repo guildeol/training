@@ -1,5 +1,5 @@
 /*!
- * \file socketWrapper.h
+ * \file Socket.h
  * \brief Cabecalho para Wrapper da biblioteca C de Sockets do Unix.
  *
  * \date 06/04/2015
@@ -7,8 +7,8 @@
  * TODO: Adicionar excecoes proprias!
  */
 
-#ifndef SOCKETWRAPPER_H
-#define SOCKETWRAPPER_H
+#ifndef SOCKET_H
+#define SOCKET_H
 
 /* types.h Utilizado por compatibilidade (ver notas em man socket).*/
 #include <sys/types.h>
@@ -29,10 +29,10 @@
 class ServerSocket;
 
 /*!
- * \class SocketWrapper
+ * \class Socket
  * \brief Wrapper para as funcoes da biblioteca de sockets em C.
  */
-class SocketWrapper
+class Socket
 {
 friend class ServerSocket;
 
@@ -48,11 +48,11 @@ public:
    * \throw runtime_error ao chamar getaddrinfo.
    * \throw bad_alloc caso a alocação de pool falhar.
    */
-  SocketWrapper(const std::string *address, char *port, const addrinfo &hints,
+  Socket(const std::string *address, char *port, const addrinfo &hints,
                 const int poolSize = 0);
 
   /*Destrutor. Libera recursos alocados.*/
-  ~SocketWrapper();
+  ~Socket();
 
   /*Tenta conexao ao endereço especificado no construtor*/
   void connect();
@@ -112,7 +112,7 @@ protected:
 private:
 
   /* Construtor privado, utilizado em accept.*/
-  SocketWrapper(int socketDescriptor, char *port, int poolSize);
+  Socket(int socketDescriptor, char *port, int poolSize);
 };
 
 #endif
