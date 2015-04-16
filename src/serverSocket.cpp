@@ -93,10 +93,10 @@ Socket* ServerSocket::accept(const int poolSize)
 int ServerSocket::add(Socket *socket, int events)
 {
   if(socket == NULL)
-  throw std::invalid_argument("Erro: socket não pode ser nulo em add!");
+  throw std::invalid_argument(std::string("Erro: parametro socket nulo!"));
 
   if(this->currentDescriptors >= this->maxDescriptors)
-    throw std::length_error("Erro: numero maximo de descritores alcancado.");
+    throw std::length_error(std::string("Erro: numero maximo de descritores alcancado."));
 
   for (int i = 0; i < this->maxDescriptors; i++)
   {
@@ -117,10 +117,10 @@ int ServerSocket::add(Socket *socket, int events)
 int ServerSocket::remove(Socket *socket)
 {
   if(socket == NULL)
-    throw std::invalid_argument("Erro: socket não pode ser nulo em remove!");
+    throw std::invalid_argument(std::string("Erro: parametro socket nulo!"));
 
   if(this->currentDescriptors <= 0)
-    throw std::length_error("Erro: lista de descritores vazia.");
+    throw std::length_error(std::string("Erro: lista de descritores vazia."));
 
   for (int i = 0; i < this->maxDescriptors; i++)
   {
@@ -146,7 +146,7 @@ int ServerSocket::poll(int timeout)
 bool ServerSocket::canRead(Socket *socket)
 {
   if(socket == NULL)
-    throw std::invalid_argument("Erro: socket não pode ser nulo em canRead!");
+    throw std::invalid_argument(std::string("Erro: parametro socket nulo!"));
 
   for (int i = 0; i < this->maxDescriptors; i++)
   {
@@ -165,7 +165,7 @@ bool ServerSocket::canRead(Socket *socket)
 bool ServerSocket::canSend(Socket *socket)
 {
   if(socket == NULL)
-    throw std::invalid_argument("Erro: socket não pode ser nulo em canRead!");
+    throw std::invalid_argument(std::string("Erro: parametro socket nulo!"));
 
   for (int i = 0; i < this->maxDescriptors; i++)
   {

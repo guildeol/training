@@ -2,7 +2,7 @@
 #include <serverSocket.h>
 
 #include <iostream>
-#include <list>
+#include <vector>
 
 using namespace std;
 
@@ -13,7 +13,9 @@ int main(int argc, char *argv[])
   ServerSocket *server = NULL;
   Socket *newSocket = NULL;
 
-  const int backlog = 10;
+  const int backlog = 1;
+
+  vector<Socket *> connected;
 
   // char buffer[1024];
   // int rc = 0;
@@ -29,7 +31,11 @@ int main(int argc, char *argv[])
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
 
-    server = new ServerSocket(NULL, port, hints, poolSize, backlog);
+    /*
+     * Sao reservados backlog + 1 descritores, pois o servidor deve utilizar um
+     * destes descritores.
+     */
+    server = new ServerSocket(NULL, port, hints, poolSize, backlog + 1);
 
     server->bind();
     server->listen(backlog);
@@ -37,24 +43,38 @@ int main(int argc, char *argv[])
     // O socket do servidor sempre e adicionado primeiro no array de descritores
     server->add(server, POLLIN);
 
-    cout << "Aguardando conexões" << endl;
+    connected.reserve(backlog);
+
+    cout << "Aguardando conexões..." << endl;
 
     while (true)
     {
-      server->poll(-1);
+      server->poll();
 
       if (server->canRead(server))
       {
         newSocket = server->accept(poolSize);
+
         server->add(newSocket, POLLIN|POLLOUT);
 
-        newSocket->send("Hello!\n");
+        if (connected.size() < backlog)
+          connected.push_back(newSocket);
+      }
 
-        break;
+      for (unsigned int i = 0; i < connected.size(); i++)
+      {
+        if(server->canSend(connected[i]))
+        {
+          connected[i]->send("Hey there!\n");
+
+          server->remove(connected[i]);
+          connected.erase(connected.begin() + i);
+          delete connected[i];
+        }
       }
     }
   }
-  catch (exception e)
+  catch (exception &e)
   {
     cout << e.what() << endl;
   }
@@ -64,8 +84,6 @@ int main(int argc, char *argv[])
 
   if(newSocket)
     delete newSocket;
-
-
 
   return 0;
 }
