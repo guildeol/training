@@ -153,7 +153,7 @@ bool ServerSocket::canRead(Socket *socket)
     if (socket->socketDescriptor == this->descriptors[i].fd)
     {
       if (this->descriptors[i].revents & POLLIN)
-      return true;
+        return true;
 
       break;
     }
@@ -172,7 +172,7 @@ bool ServerSocket::canSend(Socket *socket)
     if (socket->socketDescriptor == this->descriptors[i].fd)
     {
       if (this->descriptors[i].revents & POLLOUT)
-      return true;
+        return true;
 
       break;
     }

@@ -17,7 +17,8 @@ int main(int argc, char *argv[])
 
   vector<Socket *> connected;
 
-  // char buffer[1024];
+  char buffer[1024];
+
   // int rc = 0;
 
   try
@@ -59,18 +60,27 @@ int main(int argc, char *argv[])
 
         if (connected.size() < backlog)
           connected.push_back(newSocket);
+
       }
 
       for (unsigned int i = 0; i < connected.size(); i++)
       {
-        if(server->canSend(connected[i]))
+        if (server->canRead(connected[i]))
         {
-          connected[i]->send("Hey there!\n");
+          int rc = connected[i]->receive(buffer, poolSize);
 
-          server->remove(connected[i]);
-          connected.erase(connected.begin() + i);
-          delete connected[i];
+          cout.write(buffer,rc);
+          cout.flush();
         }
+
+        // if (server->canSend(connected[i]))
+        // {
+        //   connected[i]->send("Hey there!\n");
+        //
+        //   server->remove(connected[i]);
+        //   connected.erase(connected.begin() + i);
+        //   delete connected[i];
+        // }
       }
     }
   }
