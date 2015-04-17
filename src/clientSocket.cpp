@@ -12,6 +12,16 @@ ClientSocket::ClientSocket(const std::string *address, char *port, const addrinf
   // Vazio, apenas constrói a classe base
 }
 
+int ClientSocket::send(const std::string buffer, int flags)
+{
+  int rc = ::send(this->socketDescriptor, buffer.c_str(), buffer.size(), flags);
+
+  if( rc == -1)
+    throw std::runtime_error(std::string("Erro no envio de dados: ")
+                             + strerror(errno));
+  return rc;
+}
+
 void ClientSocket::connect()
 {
   addrinfo *r = this->info;

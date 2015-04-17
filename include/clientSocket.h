@@ -31,9 +31,11 @@ public:
   /*Tenta conexao ao endereço especificado no construtor*/
   void connect();
 
-  /*Tenta enviar todos os dados em buffer atraves do socket*/
-  int sendAll(char *buffer, int length);
+  /* Sobrecarga para enviar um objeto string via socket */
+  int send(const std::string buffer, int flags = 0);
 
+  /* Tenta enviar todos os dados em buffer atraves do socket*/
+  int sendAll(char *buffer, int length);
 };
 
 #endif

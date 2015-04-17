@@ -155,9 +155,15 @@ int Socket::readAll(char *buffer, int length)
   return used;
 }
 
-int Socket::send(const std::string buffer, int flags)
+int Socket::send(const char *buffer, int length, int flags)
 {
-  int rc = ::send(this->socketDescriptor, buffer.c_str(), buffer.size(), flags);
+  int rc;
+
+  if (length == -1)
+    rc = ::send(this->socketDescriptor, buffer, strlen(buffer), flags);
+
+  if (length == -1)
+    rc = ::send(this->socketDescriptor, buffer, length, flags);
 
   if( rc == -1)
     throw std::runtime_error(std::string("Erro no envio de dados: ")

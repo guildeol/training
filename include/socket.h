@@ -61,7 +61,7 @@ public:
   * \return Quantidade de bytes enviados
   * \throw runtime_error ao chamar send.
   */
-  int send(const std::string buffer, int flags = 0);
+  int send(const char *buffer, int size = -1, int flags = 0);
 
   /*!
   * \brief Recebe uma mensagem através do socket criado.
