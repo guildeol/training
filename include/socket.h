@@ -104,7 +104,7 @@ protected:
   /* Ambas as funcoes readLine e readAll operam as variaveis abaixo.*/
   char *pool = NULL; /*!< Pool para leitura através de buffer.*/
   unsigned int poolSize = 0; /*!< Tamanho maximo do pool.*/
-  unsigned int begin = 0; /*!< Variavel para controle de leitura de pool*/
+  unsigned int start = 0; /*!< Variavel para controle de leitura de pool*/
   unsigned int end = 0; /*!< Variavel para controle de leitura de pool*/
   bool hasData = false; /*!< Variavel para indicar se ha dados disponiveis no
                              pool.*/

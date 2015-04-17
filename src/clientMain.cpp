@@ -42,7 +42,14 @@ int main(int argc, char *argv[])
   bool overwrite = false;
 
   ofstream destination;
+
   Socket *clientSocket = NULL;
+  char *port = "80";
+  addrinfo hints;
+  const int poolSize = 1024;
+
+  const int bufferSize = 5096;
+  char buffer[bufferSize];
 
   int i = 0;
 
@@ -105,41 +112,6 @@ int main(int argc, char *argv[])
 
   try
   {
-
-    char *port = "80";
-    addrinfo hints;
-
-    // Definindo o socket para responder ao padrão IPV4 ou IPV6, e utilizar TCP.
-    memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-
-    const int poolSize = 1024;
-
-    clientSocket = new Socket(&address, port, hints, poolSize);
-
-    clientSocket->connect();
-
-    clientSocket->send("GET " + resource + " HTTP/1.0\r\n\r\n");
-
-    char buffer[5096];
-
-    /* Laco para pular os headers.*/
-    while (true)
-    {
-      rc = clientSocket->readLine(buffer, 5096);
-
-      buffer[rc + 1] = '\0';
-
-      if (rc <= 0)
-      {
-        break;
-      }
-
-      if (!strcmp(buffer, "\r\n") || !strcmp(buffer, "\n"))
-        break;
-    }
-
     if (fileExists(filename))
     {
       if (!overwrite)
@@ -160,14 +132,38 @@ int main(int argc, char *argv[])
       return -3;
     }
 
+    // Definindo o socket para responder ao padrão IPV4 ou IPV6, e utilizar TCP.
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+
+    clientSocket = new Socket(&address, port, hints, poolSize);
+
+    clientSocket->connect();
+
+    clientSocket->send("GET " + resource + " HTTP/1.0\r\n\r\n");
+
+    /* Laco para pular os headers.*/
     while (true)
     {
-      rc = clientSocket->readAll(buffer, 5096);
+      rc = clientSocket->readLine(buffer, bufferSize);
 
       if (rc <= 0)
-      {
         break;
-      }
+
+      if (!strncmp(buffer, "\r\n", strlen("\r\n")))
+        break;
+
+      if (!strncmp(buffer, "\n", strlen("\n")))
+        break;
+    }
+
+    while (true)
+    {
+      rc = clientSocket->readAll(buffer, bufferSize);
+
+      if (rc <= 0)
+        break;
 
       destination.write(buffer, rc);
     }

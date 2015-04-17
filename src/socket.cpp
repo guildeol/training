@@ -69,133 +69,90 @@ Socket::Socket(int socketDescriptor, char *port, int poolSize)
 
 int Socket::readLine(char *buffer, int length)
 {
+  int available = length;
+  char *found = NULL;
+  int copyAmount = 0;
+
   if (!this->pool)
-  {
     throw std::runtime_error(std::string("Erro: pool para leitura não alocado!"));
-  }
 
-  bool done = false;
-
-  // Le poolSize bytes e guarda-os em pool
-  if (!this->hasData)
+  while (true)
   {
-    end = this->receive(this->pool, this->poolSize, 0);
-
-    // end == 0 significa que a conexão foi encerrada
-    if(end == 0)
-      return 0;
-
-    this->hasData = true;
-  }
-
-  int i = 0;
-
-  /*
-   * Este laco itera sobre os dados no pool e para uma vez que encontra um
-   * separador de linha. Sao lidos no maximo length - 1 bytes do pool.
-   */
-
-  while (!done)
-  {
-    for (unsigned int j = begin; j <= end; ++j, ++i)
+    // Le poolSize bytes e guarda-os em pool
+    if (!this->hasData)
     {
-      if (j == end)
-      {
-        if(pool[end] == '\n')
-        {
-          done = true;
-          this->hasData = false;
-          this->begin = 0;
+      end = this->receive(this->pool, this->poolSize, 0);
 
-          break;
-        }
+      // end == 0 significa que a conexão foi encerrada
+      if(end == 0)
+        return 0;
 
-        end = this->receive(this->pool, this->poolSize, 0);
-        begin = 0;
-
-        if (end == 0)
-          done = true;
-
-        break;
-      }
-
-      if (i == length - 2)
-      {
-        begin = j;
-        done = true;
-
-        break;
-      }
-
-      buffer[i] = this->pool[j];
-
-      if (pool[j] == '\n')
-      {
-        begin = j + 1;
-        done = true;
-
-        break;
-      }
+      this->start = 0;
+      this->hasData = true;
     }
+
+    found = strchr(this->pool + this->start, '\n');
+
+    if (found)
+      copyAmount = found - (this->pool + this->start) + 1;
+    else
+      copyAmount = this->end - this->start;
+
+    if (copyAmount > available)
+      throw std::runtime_error("Erro: tamanho do buffer insuficiente.");
+
+    // Copia todos os dados encontrados, incluindo o ''\n'
+    memcpy(buffer, this->pool + this->start, copyAmount);
+
+    if (found)
+    {
+      this->start += copyAmount;
+      this->start %= this->poolSize;
+      break;
+    }
+
+    available -= copyAmount;
+    hasData = false;
   }
 
-  return i;
+  return copyAmount;
 }
 
 int Socket::readAll(char *buffer, int length)
 {
+  int copyAmount = 0;
+  int used = 0;
+
   if (!this->pool)
-  {
     throw std::runtime_error(std::string("Erro: pool para leitura não alocado!"));
-  }
 
-  bool done = false;
-
-  // Le poolSize bytes e guarda-os em pool
-  if (!this->hasData)
+  while (used < length)
   {
-    end = this->receive(this->pool, this->poolSize, 0);
-
-    if(end == 0)
-      return 0;
-
-    this->hasData = true;
-  }
-
-  int i = 0;
-
-  /*!
-   * Este laco itera sobre os dados no pool e executa até que o pool seja
-   * esvaziado ou que o buffer seja totalmente preenchido.
-   */
-
-  while (!done)
-  {
-    for (unsigned int j = begin; j <= end; ++j, ++i)
+    if (!this->hasData)
     {
-      if (i == length - 1)
-      {
-        begin = j;
-        done = true;
+      end = this->receive(this->pool, this->poolSize, 0);
+
+      this->start = 0;
+      this->hasData = true;
+
+      // end == 0 significa que a conexão foi encerrada
+      if(end == 0)
         break;
-      }
-
-      if (j == end)
-      {
-        end = this->receive(this->pool, this->poolSize, 0);
-        begin = 0;
-
-        if (end == 0)
-          done = true;
-
-        break;
-      }
-
-      buffer[i] = this->pool[j];
     }
+
+    copyAmount = (this->end - this->start) % (length + 1);
+
+    if(used + copyAmount > length)
+      break;
+
+    memcpy(buffer + used, this->pool + this->start, copyAmount);
+
+    used += copyAmount;
+
+    this->hasData = false;
   }
 
-  return i;
+  return used;
 }
 
 void Socket::connect()
