@@ -7,7 +7,7 @@
 #include <iostream>
 #include <fstream>
 
-#include <socket.h>
+#include <clientSocket.h>
 
 #include <sys/stat.h>
 #include <string>
@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
 
   ofstream destination;
 
-  Socket *clientSocket = NULL;
+  ClientSocket *client = NULL;
   char *port = "80";
   addrinfo hints;
   const int poolSize = 1024;
@@ -137,16 +137,16 @@ int main(int argc, char *argv[])
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
 
-    clientSocket = new Socket(&address, port, hints, poolSize);
+    client = new ClientSocket(&address, port, hints, poolSize);
 
-    clientSocket->connect();
+    client->connect();
 
-    clientSocket->send("GET " + resource + " HTTP/1.0\r\n\r\n");
+    client->send("GET " + resource + " HTTP/1.0\r\n\r\n");
 
     /* Laco para pular os headers.*/
     while (true)
     {
-      rc = clientSocket->readLine(buffer, bufferSize);
+      rc = client->readLine(buffer, bufferSize);
 
       if (rc <= 0)
         break;
@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
 
     while (true)
     {
-      rc = clientSocket->readAll(buffer, bufferSize);
+      rc = client->readAll(buffer, bufferSize);
 
       if (rc <= 0)
         break;
@@ -177,8 +177,8 @@ int main(int argc, char *argv[])
   if(destination.is_open())
     destination.close();
 
-  if(clientSocket)
-    delete clientSocket;
+  if(client)
+    delete client;
 
   return 0;
 }

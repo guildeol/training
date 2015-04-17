@@ -155,19 +155,6 @@ int Socket::readAll(char *buffer, int length)
   return used;
 }
 
-void Socket::connect()
-{
-  addrinfo *r = this->info;
-
-  if (::connect(this->socketDescriptor, r->ai_addr, r->ai_addrlen) != 0)
-  {
-    close(this->socketDescriptor);
-    throw std::runtime_error(std::string("Erro em Connect: ")
-                             + strerror(errno));
-  }
-
-}
-
 int Socket::send(const std::string buffer, int flags)
 {
   int rc = ::send(this->socketDescriptor, buffer.c_str(), buffer.size(), flags);

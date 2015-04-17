@@ -49,13 +49,10 @@ public:
    * \throw bad_alloc caso a alocação de pool falhar.
    */
   Socket(const std::string *address, char *port, const addrinfo &hints,
-                const int poolSize = 0);
+         const int poolSize = 0);
 
   /*Destrutor. Libera recursos alocados.*/
   ~Socket();
-
-  /*Tenta conexao ao endereço especificado no construtor*/
-  void connect();
 
   /*!
   * \brief Envia uma mensagem através do socket criado.
