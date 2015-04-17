@@ -20,15 +20,15 @@ int main(int argc, char *argv[])
 
   vector<Socket *> connected;
 
-  char buffer[1024];
+  string request;
+
+  char *port = "8080";
+  const int poolSize = 1024;
+
+  char buffer[poolSize];
 
   try
   {
-    string request;
-
-    char *port = "8080";
-    int poolSize = 1024;
-
     // Conexao tipo TCP, IPV4 ou V6, preenchimento automatico de IP
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
@@ -40,11 +40,8 @@ int main(int argc, char *argv[])
      * destes descritores.
      */
     server = new ServerSocket(NULL, port, hints, poolSize, backlog + 1);
-
     server->bind();
     server->listen(backlog);
-
-    // O socket do servidor sempre e adicionado primeiro no array de descritores
     server->add(server, POLLIN);
 
     connected.reserve(backlog);
@@ -59,11 +56,12 @@ int main(int argc, char *argv[])
       {
         newSocket = server->accept(poolSize);
 
-        server->add(newSocket, POLLIN|POLLOUT);
-
+        //Verificar o que acontece se backlog + 1 clientes se conectarem
         if (connected.size() < backlog)
+        {
+          server->add(newSocket, POLLIN|POLLOUT);
           connected.push_back(newSocket);
-
+        }
       }
 
       for (unsigned int i = 0; i < connected.size(); i++)
@@ -76,15 +74,16 @@ int main(int argc, char *argv[])
           if(rc <= 0)
             break;
 
-          buffer[rc + 1] = '\0';
-
-          request.assign(buffer);
+          request.assign(buffer, rc);
 
           HTTPInterface *analyser = new HTTPInterface(request);
 
-          cout << analyser->method + " " + analyser->resource + " " +
-                  analyser->protocol;
+          rc = analyser->validate();
 
+          if(rc != 0)
+            analyser.respond(rc, connected[i]);
+
+          //Lendo headers
           do
           {
             rc = connected[i]->readLine(buffer, poolSize);
@@ -92,10 +91,9 @@ int main(int argc, char *argv[])
             if(rc <= 0)
               break;
 
-            buffer[rc + 1] = '\0';
-
-            cout << buffer;
-          } while (strcmp(buffer, "\r\n"));
+            cout.write(buffer, rc);
+            cout.flush();
+          } while (strncmp(buffer, "\r\n", strlen("\r\n")));
 
           if (server->canSend(connected[i]))
           {
@@ -119,9 +117,6 @@ int main(int argc, char *argv[])
 
   if(server)
     delete server;
-
-  if(newSocket)
-    delete newSocket;
 
   return 0;
 }

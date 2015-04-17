@@ -100,7 +100,7 @@ public:
   * \brief Avalia o resultado de poll para saber se um socket possui dados
   *        esperando para serem lidos (com receive(), readLine() ou readAll()).
   * \param[in] socket Socket a ser avaliado.
-  * \return true se o socket estiver possuir dados, false caso contrario.
+  * \return true se o socket possuir dados, false caso contrario.
   * \throw invalid_argument caso socket seja nulo.
   */
   bool canRead(Socket *socket);
