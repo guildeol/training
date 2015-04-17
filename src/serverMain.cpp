@@ -76,13 +76,6 @@ int main(int argc, char *argv[])
 
           request.assign(buffer, rc);
 
-          HTTPInterface *analyser = new HTTPInterface(request);
-
-          rc = analyser->validate();
-
-          if(rc != 0)
-            analyser.respond(rc, connected[i]);
-
           //Lendo headers
           do
           {
@@ -94,19 +87,21 @@ int main(int argc, char *argv[])
             cout.write(buffer, rc);
             cout.flush();
           } while (strncmp(buffer, "\r\n", strlen("\r\n")));
-
-          if (server->canSend(connected[i]))
-          {
-            connected[i]->send("Aqui esta sua resposta!\n");
-          }
-
-          cout << "Fim!" << endl;
-
-          //Terminou a requisicao do cliente
-          server->remove(connected[i]);
-          connected.erase(connected.begin() + i);
-          delete connected[i];
         }
+
+        HTTPInterface *analyser = new HTTPInterface(request);
+        rc = analyser->validate();
+
+        while(!server->canSend(connected[i]))
+          ;
+
+        if(rc != 0)
+          analyser->respond(rc, connected[i]);
+
+        //Terminou a requisicao do cliente
+        server->remove(connected[i]);
+        connected.erase(connected.begin() + i);
+        delete connected[i];
       }
     }
   }

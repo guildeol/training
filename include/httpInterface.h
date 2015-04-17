@@ -26,13 +26,15 @@ public:
 
   int validate();
 
-  int respond(int code, Socket &socket);
+  int respond(int code, Socket *socket);
 
   std::string method;
   std::string resource;
   std::string protocol;
 
 private:
+
+  std::fstream fetch(int code, int &length);
 
   const std::string knownMethods;
   const std::string knownProtocols;
