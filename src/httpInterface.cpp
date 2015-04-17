@@ -51,7 +51,7 @@ int HTTPInterface::respond(int code, Socket *socket)
   // socket->send(protocol + " " + code + " " + reason + "\r\n");
   // socket->send("Date: " + date + "\r\n");
   // socket->send("Server: aker-training/0.1\r\n");
-  // socket->send("Content-Type: " + type + "\r\n");
+  // socket->send("Content-Type: application/octet-stream\r\n");
   // socket->send("Content-Length: " + length + "\r\n");
   // socket->send("\r\n");
   //
@@ -62,21 +62,21 @@ int HTTPInterface::respond(int code, Socket *socket)
 
 // std::ifstream fetch(int code, int &length)
 // {
-//   // using namespace std;
-//   //
-//   // fstream file;
-//   //
-//   // if (code == 200)
-//   //   file.open(resource, ios::binary);
-//   // else
-//   //   file.open(responseFiles[code], ios::binary);
-//   //
-//   // if(!file.is_good())
-//   //   throw runtime_error(std::string("Erro ao abrir o arquivo requisitado!"));
-//   //
-//   // file.seekg(0, file.end);
-//   // length = file.tellg();
-//   // file.seekg(0, file.begin);
-//   //
-//   // return file;
+//   using namespace std;
+//
+//   fstream file;
+//
+//   if (code == 200)
+//     file.open(resource, ios::binary);
+//   else
+//     file.open(responseFiles[code], ios::binary);
+//
+//   if(!file.is_good())
+//     throw runtime_error(std::string("Erro ao abrir o arquivo requisitado!"));
+//
+//   file.seekg(0, file.end);
+//   length = file.tellg();
+//   file.seekg(0, file.begin);
+//
+//   return file;
 // }

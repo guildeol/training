@@ -22,6 +22,30 @@ int ClientSocket::send(const std::string buffer, int flags)
   return rc;
 }
 
+int ClientSocket::sendAll(const char *buffer, int length, int flags)
+{
+  int total = 0;
+  int remaining = length;
+  int rc = 0;
+
+  while (remaining)
+  {
+    rc = ::send(buffer + total, remaining, flags);
+
+    if (rc == -1)
+    {
+      close(this->socketDescriptor);
+      throw std::runtime_error(std::string("Erro em send all: "
+                               + strerror(errno)));
+    }
+
+    remaining -= rc;
+    total += rc;
+  }
+
+  return 0;
+}
+
 void ClientSocket::connect()
 {
   addrinfo *r = this->info;
