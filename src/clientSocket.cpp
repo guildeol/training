@@ -30,13 +30,13 @@ int ClientSocket::sendAll(const char *buffer, int length, int flags)
 
   while (remaining)
   {
-    rc = ::send(buffer + total, remaining, flags);
+    rc = ::send(this->socketDescriptor, buffer + total, remaining, flags);
 
     if (rc == -1)
     {
       close(this->socketDescriptor);
-      throw std::runtime_error(std::string("Erro em send all: "
-                               + strerror(errno)));
+      throw std::runtime_error(std::string("Erro em send all: ")
+                               + strerror(errno));
     }
 
     remaining -= rc;

@@ -35,7 +35,7 @@ public:
   int send(const std::string buffer, int flags = 0);
 
   /* Tenta enviar todos os dados em buffer atraves do socket*/
-  int sendAll(char *buffer, int length, int flags = 0);
+  int sendAll(const char *buffer, int length, int flags = 0);
 };
 
 #endif
