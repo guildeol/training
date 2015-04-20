@@ -161,8 +161,7 @@ int Socket::send(const char *buffer, int length, int flags)
 
   if (length == -1)
     rc = ::send(this->socketDescriptor, buffer, strlen(buffer), flags);
-
-  if (length == -1)
+  else
     rc = ::send(this->socketDescriptor, buffer, length, flags);
 
   if( rc == -1)
