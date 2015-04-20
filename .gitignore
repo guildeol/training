@@ -52,3 +52,8 @@ img
 output
 *~
 *.pdf
+!400.html
+!403.html
+!404.html
+!501.html
+!505.html
