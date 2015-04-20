@@ -45,6 +45,10 @@ HTTPInterface::HTTPInterface(std::string &request, const char *root):
   //Copia todos os caracteres entre os espaços
   this->resource.assign(request, first + 1, second - first - 1);
 
+  //Formatado o nome do recurso
+  if (this->resource[0] == '/')
+    resource.erase(0, 1);
+
   //Copia todos os caracteres antes do primeiro \r ou \n
   this->protocol.assign(request, second + 1  , end - second - 1);
 

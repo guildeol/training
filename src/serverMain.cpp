@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
 
   string request;
 
-  string root(".");
+  string root("./");
   char *port = "8080";
   const int poolSize = 1024;
 
