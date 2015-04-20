@@ -65,7 +65,7 @@ int ServerSocket::listen(const int backlog)
   return rc;
 }
 
-Socket* ServerSocket::accept(const int poolSize)
+ClientSocket* ServerSocket::accept(const int poolSize)
 {
   socklen_t endpointSize = sizeof(this->endpoint);
 
@@ -75,11 +75,11 @@ Socket* ServerSocket::accept(const int poolSize)
   if(newDescriptor == -1)
     throw std::runtime_error(std::string("Erro em accept: ") + strerror(errno));
 
-  Socket *newSocket = NULL;
+  ClientSocket *newSocket = NULL;
 
   try
   {
-    newSocket = new Socket(newDescriptor, this->port, poolSize);
+    newSocket = new ClientSocket(newDescriptor, this->port, poolSize);
   }
   catch (std::exception e)
   {

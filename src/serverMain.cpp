@@ -2,10 +2,21 @@
 #include <serverSocket.h>
 #include <httpInterface.h>
 
+#include <sys/stat.h>
+
 #include <iostream>
 #include <vector>
 
 using namespace std;
+
+inline bool fileExists (const string &filename)
+{
+  struct stat buffer;
+
+  bool result = (stat(filename.c_str(), &buffer) == 0);
+
+  return result;
+}
 
 int main(int argc, char *argv[])
 {
@@ -14,11 +25,11 @@ int main(int argc, char *argv[])
   struct addrinfo hints;
 
   ServerSocket *server = NULL;
-  Socket *newSocket = NULL;
+  ClientSocket *newSocket = NULL;
 
   const int backlog = 1;
 
-  vector<Socket *> connected;
+  vector<ClientSocket *> connected;
 
   string request;
 

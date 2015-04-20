@@ -27,6 +27,7 @@
 
 //Declaração adiantada de ServerSocket, para usar com friend
 class ServerSocket;
+class ClientSocket;
 
 /*!
  * \class Socket
@@ -35,6 +36,7 @@ class ServerSocket;
 class Socket
 {
 friend class ServerSocket;
+friend class ClientSocket;
 
 public:
   /*!
