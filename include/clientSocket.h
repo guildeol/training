@@ -16,7 +16,7 @@
 #include <string>
 
 /*!
-* \brief Classe para criacao de um client utilizando sockets.
+* \brief Classe para criacao de um cliente utilizando sockets.
 * \class clientSocket
 */
 

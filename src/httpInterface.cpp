@@ -43,9 +43,15 @@ int HTTPInterface::respond(int code, ClientSocket *socket)
   ifstream file;
   int length = 0;
 
+  const int blockSize = 512;
+  char buffer[blockSize];
+  int total = 0;
+
+  int rc = 0;
+
   try
   {
-    // this->fetch(file, code, length);
+    this->fetch(file, code, length);
 
     time_t now;
     struct tm *t;
@@ -62,7 +68,17 @@ int HTTPInterface::respond(int code, ClientSocket *socket)
     socket->send("Content-Length: " + to_string(length) + "\r\n");
     socket->send("\r\n");
 
-    // socket->sendAll(file);
+    do
+    {
+      file.read(buffer, blockSize);
+      total += file.gcount();
+
+      rc = socket->sendAll(buffer, file.gcount());
+
+      if(rc != 0)
+        throw runtime_error(string("Erro ao enviar arquivo para cliente!"));
+
+    } while(total < length);
   }
   catch (exception &e)
   {
@@ -77,7 +93,7 @@ void HTTPInterface::fetch(std::ifstream &file, int code, int &length)
   using namespace std;
 
   if (code == 200)
-    file.open(this->resource, ios::binary);
+    file.open(this->resource.c_str(), ios::binary);
   else
     file.open(to_string(code) + ".html", ios::binary);
 
