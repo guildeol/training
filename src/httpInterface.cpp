@@ -3,34 +3,69 @@
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
+#include <iostream>
+#include <algorithm> /*Para std::count*/
+
+#include <sys/stat.h>
 
 #include <cstdio>
 #include <cstring>
 
-HTTPInterface::HTTPInterface(std::string &request):
+inline bool fileExists (const std::string &filename)
+{
+  struct stat buffer;
+
+  bool result = (stat(filename.c_str(), &buffer) == 0);
+
+  return result;
+}
+
+HTTPInterface::HTTPInterface(std::string &request, const char *root):
+  method(""),
+  resource(""),
+  protocol("HTTP/1.0"),
+  responseFolder("./responses/"),
   knownMethods("GET"),
   knownProtocols("HTTP/1.0 HTTP/1.1")
 {
-  int first = request.find(' ', 0);
-  int second = request.find(' ', first + 1);
-  int end = request.find_first_of("\r\n", second + 1);
+  using namespace std;
+
+  int spaces = std::count(request.begin(), request.end(), ' ');
+
+  if (spaces != 2)
+    return;
+
+  unsigned int first  = request.find_first_of(" \r\n", 0);
+  unsigned int second = request.find_first_of(" \r\n", first + 1);
+  unsigned int end    = request.find_first_of(" \r\n", second + 1);
 
   //Copia todos os caracteres antes do primeiro espaço
-  method.assign(request, 0, first);
+  this->method.assign(request, 0, first);
 
   //Copia todos os caracteres entre os espaços
-  resource.assign(request, first + 1, second - first - 1);
+  this->resource.assign(request, first + 1, second - first - 1);
 
   //Copia todos os caracteres antes do primeiro \r ou \n
-  protocol.assign(request, second + 1  , end - second - 1);
+  this->protocol.assign(request, second + 1  , end - second - 1);
+
+  this->root.assign(root);
 }
 
 int HTTPInterface::validate()
 {
-  if(this->knownMethods.find(this->method) == std::string::npos)
+  if (this->method.empty() || this->resource.empty() || this->protocol.empty())
+    return 400;
+
+  if (this->resource.find("../") != std::string::npos)
+    return 403;
+
+  if (!fileExists(root + this->resource))
+    return 404;
+
+  if (this->knownMethods.find(this->method) == std::string::npos)
     return 501;
 
-  if(this->knownProtocols.find(this->protocol) == std::string::npos)
+  if (this->knownProtocols.find(this->protocol) == std::string::npos)
     return 505;
 
   return 200;
@@ -61,7 +96,8 @@ int HTTPInterface::respond(int code, ClientSocket *socket)
 
     string timeString = timeToString(*t);
 
-    socket->send(this->protocol + " " + to_string(code) + " " + reason[code] + "\r\n");
+    socket->send(this->protocol + " " + to_string(code) + " " + reason[code]
+                 + "\r\n");
     socket->send("Date: " + timeString + "\r\n");
     socket->send("Server: aker-training/0.1\r\n");
     socket->send("Content-Type: application/octet-stream\r\n");
@@ -82,6 +118,7 @@ int HTTPInterface::respond(int code, ClientSocket *socket)
   }
   catch (exception &e)
   {
+    cout << "Erro ao enviar o arquivo de resposta!" << endl;
     throw e;
   }
 
@@ -93,12 +130,12 @@ void HTTPInterface::fetch(std::ifstream &file, int code, int &length)
   using namespace std;
 
   if (code == 200)
-    file.open(this->resource.c_str(), ios::binary);
+    file.open(this->root + this->resource, ios::binary);
   else
-    file.open(to_string(code) + ".html", ios::binary);
+    file.open(responseFolder + to_string(code)+ ".html", ios::binary);
 
   if(!file.good())
-    throw runtime_error(std::string("Erro ao abrir o arquivo requisitado!"));
+    throw runtime_error(std::string("Erro ao abrir o arquivo de resposta!"));
 
   file.seekg(0, file.end);
   length = file.tellg();

@@ -2,21 +2,10 @@
 #include <serverSocket.h>
 #include <httpInterface.h>
 
-#include <sys/stat.h>
-
 #include <iostream>
 #include <vector>
 
 using namespace std;
-
-inline bool fileExists (const string &filename)
-{
-  struct stat buffer;
-
-  bool result = (stat(filename.c_str(), &buffer) == 0);
-
-  return result;
-}
 
 int main(int argc, char *argv[])
 {
@@ -33,6 +22,7 @@ int main(int argc, char *argv[])
 
   string request;
 
+  string root(".");
   char *port = "8080";
   const int poolSize = 1024;
 
@@ -99,7 +89,7 @@ int main(int argc, char *argv[])
             cout.flush();
           } while (strncmp(buffer, "\r\n", strlen("\r\n")));
 
-          HTTPInterface *analyser = new HTTPInterface(request);
+          HTTPInterface *analyser = new HTTPInterface(request, root.c_str());
           rc = analyser->validate();
 
           while(!server->canSend(connected[i]))

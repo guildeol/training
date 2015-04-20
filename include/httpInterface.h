@@ -24,7 +24,7 @@ class HTTPInterface
 {
 public:
 
-  HTTPInterface(std::string &request);
+  HTTPInterface(std::string &request, const char *root = ".");
 
   int validate();
 
@@ -33,11 +33,14 @@ public:
   std::string method;
   std::string resource;
   std::string protocol;
+  std::string root;
 
 private:
 
   void fetch(std::ifstream &file, int code, int &length);
   std::string timeToString(struct tm &t);
+
+  std::string responseFolder;
 
   std::string knownMethods;
   std::string knownProtocols;
