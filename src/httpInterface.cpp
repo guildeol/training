@@ -79,7 +79,7 @@ void HTTPInterface::fetch(std::ifstream &file, int code, int &length)
   if (code == 200)
     file.open(this->resource, ios::binary);
   else
-    file.open(this->responseFiles[code], ios::binary);
+    file.open(to_string(code) + ".html", ios::binary);
 
   if(!file.good())
     throw runtime_error(std::string("Erro ao abrir o arquivo requisitado!"));

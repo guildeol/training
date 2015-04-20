@@ -42,7 +42,11 @@ private:
   std::string knownMethods;
   std::string knownProtocols;
 
-  std::map<int, std::string> reason = {{200, "OK"}, };
+  std::map<int, std::string> reason = {{200, "OK"}, {400, "Bad Request"},
+                                       {403, "Forbidden"}, {404, "Not Found"},
+                                       {501, "Not Implemented"},
+                                       {505, "HTTP Version Not Supported"}};
+
   std::map<int, std::string> responseFiles{{404, "404.html"}};
 };
 
