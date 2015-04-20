@@ -11,6 +11,7 @@
 #define SERVERSOCKET_H
 
 #include <socket.h>
+#include <clientSocket.h>
 #include <poll.h>
 
 #include <string>
@@ -65,7 +66,7 @@ public:
   * \return Retorna um novo Socket para comunicação em caso de sucesso
   * \throw runtime_error caso accept falhe
   */
-  Socket* accept(const int poolSize = 0);
+  ClientSocket* accept(const int poolSize = 0);
 
   /*!
   * \brief Adiciona o descritor de socket à lista de descritores "vigiados"

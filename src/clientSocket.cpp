@@ -12,6 +12,12 @@ ClientSocket::ClientSocket(const std::string *address, char *port, const addrinf
   // Vazio, apenas constrói a classe base
 }
 
+ClientSocket::ClientSocket(int socketDescriptor, char *port, int poolSize):
+  Socket(socketDescriptor, port, poolSize)
+{
+
+}
+
 int ClientSocket::send(const std::string buffer, int flags)
 {
   int rc = ::send(this->socketDescriptor, buffer.c_str(), buffer.size(), flags);

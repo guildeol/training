@@ -20,8 +20,12 @@
 * \class clientSocket
 */
 
+class ServerSocket;
+
 class ClientSocket : public Socket
 {
+
+friend class ServerSocket;
 
 public:
 
@@ -36,6 +40,11 @@ public:
 
   /* Tenta enviar todos os dados em buffer atraves do socket*/
   int sendAll(const char *buffer, int length, int flags = 0);
+
+private:
+
+  /* Construtor privado, utilizado em accept.*/
+  ClientSocket(int socketDescriptor, char *port, int poolSize);
 };
 
 #endif

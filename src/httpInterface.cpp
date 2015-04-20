@@ -1,7 +1,11 @@
 #include <httpInterface.h>
 
 #include <fstream>
+#include <sstream>
 #include <stdexcept>
+
+#include <cstdio>
+#include <cstring>
 
 HTTPInterface::HTTPInterface(std::string &request):
   knownMethods("GET"),
@@ -29,54 +33,68 @@ int HTTPInterface::validate()
   if(this->knownProtocols.find(this->protocol) == std::string::npos)
     return 505;
 
-  return 0;
+  return 200;
 }
 
-int HTTPInterface::respond(int code, Socket *socket)
+int HTTPInterface::respond(int code, ClientSocket *socket)
 {
-  // using namespace std;
-  //
-  // ifstream file;
-  // int length;
-  //
-  // try
-  // {
-  //   file = fetch(code, length);
-  // }
-  // catch (exception &e)
-  // {
-  //   throw runtime_error(std::string("Erro ao abrir o arquivo requisitado!"));
-  // }
-  //
-  // socket->send(protocol + " " + code + " " + reason + "\r\n");
-  // socket->send("Date: " + date + "\r\n");
-  // socket->send("Server: aker-training/0.1\r\n");
-  // socket->send("Content-Type: application/octet-stream\r\n");
-  // socket->send("Content-Length: " + length + "\r\n");
-  // socket->send("\r\n");
-  //
-  // socket->sendAll(file);
+  using namespace std;
+
+  ifstream file;
+  int length = 0;
+
+  try
+  {
+    // this->fetch(file, code, length);
+
+    time_t now;
+    struct tm *t;
+
+    time(&now);
+    t = gmtime(&now);
+
+    string timeString = timeToString(*t);
+
+    socket->send(this->protocol + " " + to_string(code) + " " + reason[code] + "\r\n");
+    socket->send("Date: " + timeString + "\r\n");
+    socket->send("Server: aker-training/0.1\r\n");
+    socket->send("Content-Type: application/octet-stream\r\n");
+    socket->send("Content-Length: " + to_string(length) + "\r\n");
+    socket->send("\r\n");
+
+    // socket->sendAll(file);
+  }
+  catch (exception &e)
+  {
+    throw e;
+  }
 
   return 0;
 }
 
-// std::ifstream fetch(int code, int &length)
-// {
-//   using namespace std;
-//
-//   fstream file;
-//
-//   if (code == 200)
-//     file.open(resource, ios::binary);
-//   else
-//     file.open(responseFiles[code], ios::binary);
-//
-//   if(!file.is_good())
-//     throw runtime_error(std::string("Erro ao abrir o arquivo requisitado!"));
-//
-//   file.seekg(0, file.end);
-//   length = file.tellg();
-//   file.seekg(0, file.begin);
-//
-//   return file;
-// }
+void HTTPInterface::fetch(std::ifstream &file, int code, int &length)
+{
+  using namespace std;
+
+  if (code == 200)
+    file.open(this->resource, ios::binary);
+  else
+    file.open(this->responseFiles[code], ios::binary);
+
+  if(!file.good())
+    throw runtime_error(std::string("Erro ao abrir o arquivo requisitado!"));
+
+  file.seekg(0, file.end);
+  length = file.tellg();
+  file.seekg(0, file.beg);
+}
+
+std::string HTTPInterface::timeToString(struct tm &t)
+{
+  const int length = strlen("WWW, DDD MMM YYYY HH:MM:SS GMT");
+  char timeBuffer[length];
+
+  strftime(timeBuffer, length, "%a, %d %b %Y %T GMT", &t);
+
+  return std::string(timeBuffer);
+}

@@ -11,9 +11,11 @@
 #define HTTPINTERFACE_H
 
 #include <socket.h>
+#include <clientSocket.h>
 
+#include <ctime>
 #include <string>
-#include <vector>
+#include <map>
 
 #define INVALID_METHOD    -1000
 #define INVALID_PROTOCOL  -2000
@@ -26,7 +28,7 @@ public:
 
   int validate();
 
-  int respond(int code, Socket *socket);
+  int respond(int code, ClientSocket *socket);
 
   std::string method;
   std::string resource;
@@ -34,10 +36,14 @@ public:
 
 private:
 
-  std::fstream fetch(int code, int &length);
+  void fetch(std::ifstream &file, int code, int &length);
+  std::string timeToString(struct tm &t);
 
-  const std::string knownMethods;
-  const std::string knownProtocols;
+  std::string knownMethods;
+  std::string knownProtocols;
+
+  std::map<int, std::string> reason = {{200, "OK"}, };
+  std::map<int, std::string> responseFiles{{404, "404.html"}};
 };
 
 #endif
