@@ -6,7 +6,31 @@
 #include <vector>
 #include <array>
 
+#include <csignal>
+#include <cstdlib>
+
 using namespace std;
+
+ServerSocket *server = nullptr;
+HTTPInterface *analyser = nullptr;
+vector<ClientSocket *> connected;
+int connections = 0;
+
+void cleanup(int cookie)
+{
+  cout << "\nInterrompendo o servidor..." << endl;
+
+  if (server)
+    delete server;
+
+  if (analyser)
+    delete analyser;
+
+  for (int i = 0; i < connections; i++)
+    delete connected[i];
+
+  return;
+}
 
 int main(int argc, char *argv[])
 {
@@ -16,10 +40,8 @@ int main(int argc, char *argv[])
 
   struct addrinfo hints;
 
-  ServerSocket *server = NULL;
   ClientSocket *newSocket = NULL;
 
-  vector<ClientSocket *> connected;
   string request[backlog];
   array<bool, backlog> hasRequest;
 
@@ -28,6 +50,8 @@ int main(int argc, char *argv[])
   const int poolSize = 1024;
 
   char buffer[poolSize];
+
+  signal(SIGINT, cleanup);
 
   /*
    * Diretorios devem ter o '/' ao final de seus nomes. Os arquivos requisitados
@@ -53,6 +77,8 @@ int main(int argc, char *argv[])
 
   if(root.back() != '/')
     root.push_back('/');
+
+
 
   try
   {
@@ -89,6 +115,7 @@ int main(int argc, char *argv[])
         {
           server->add(newSocket, POLLIN|POLLOUT);
           connected.push_back(newSocket);
+          connections++;
         }
       }
 
@@ -118,7 +145,7 @@ int main(int argc, char *argv[])
 
         if(server->canSend(connected[i]) && hasRequest[i])
         {
-          HTTPInterface *analyser = new HTTPInterface(request[i]);
+          analyser = new HTTPInterface(request[i]);
           rc[i] = analyser->validate(root);
 
           if(rc[i] != 0)
@@ -126,11 +153,16 @@ int main(int argc, char *argv[])
 
           //Terminou a requisicao do cliente
           server->remove(connected[i]);
-          connected.erase(connected.begin() + i);
           delete connected[i];
           delete analyser;
 
+          connected[i] = nullptr;
+          analyser = nullptr;
+
+          connected.erase(connected.begin() + i);
+
           hasRequest[i] = false;
+          connections--;
         }
       }
     }
