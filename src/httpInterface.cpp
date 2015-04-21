@@ -20,7 +20,7 @@ inline bool fileExists (const std::string &filename)
   return result;
 }
 
-HTTPInterface::HTTPInterface(std::string &request, const char *root):
+HTTPInterface::HTTPInterface(std::string &request):
   method(""),
   resource(""),
   protocol("HTTP/1.0"),
@@ -45,14 +45,11 @@ HTTPInterface::HTTPInterface(std::string &request, const char *root):
   //Copia todos os caracteres entre os espaços
   this->resource.assign(request, first + 1, second - first - 1);
 
-  //Formatado o nome do recurso
-  if (this->resource[0] == '/')
-    resource.erase(0, 1);
+  if(this->resource[0] == '/')
+    this->resource.assign(this->resource.c_str(), 1, this->resource.size());
 
   //Copia todos os caracteres antes do primeiro \r ou \n
   this->protocol.assign(request, second + 1  , end - second - 1);
-
-  this->root.assign(root);
 }
 
 int HTTPInterface::validate()
@@ -63,7 +60,7 @@ int HTTPInterface::validate()
   if (this->resource.find("../") != std::string::npos)
     return 403;
 
-  if (!fileExists(root + this->resource))
+  if (!fileExists(this->resource))
     return 404;
 
   if (this->knownMethods.find(this->method) == std::string::npos)
@@ -134,7 +131,7 @@ void HTTPInterface::fetch(std::ifstream &file, int code, int &length)
   using namespace std;
 
   if (code == 200)
-    file.open(this->root + this->resource, ios::binary);
+    file.open(this->resource, ios::binary);
   else
     file.open(responseFolder + to_string(code)+ ".html", ios::binary);
 

@@ -28,6 +28,11 @@ int main(int argc, char *argv[])
 
   char buffer[poolSize];
 
+  /*
+   * Diretorios devem ter o '/' ao final de seus nomes. Os arquivos requisitados
+   * devem ser validados, de forma a validar seu formato, que nao deve possuir
+   * um '/' na frente.
+   */
   try
   {
     // Conexao tipo TCP, IPV4 ou V6, preenchimento automatico de IP
@@ -89,7 +94,7 @@ int main(int argc, char *argv[])
             cout.flush();
           } while (strncmp(buffer, "\r\n", strlen("\r\n")));
 
-          HTTPInterface *analyser = new HTTPInterface(request, root.c_str());
+          HTTPInterface *analyser = new HTTPInterface(request);
           rc = analyser->validate();
 
           while(!server->canSend(connected[i]))
@@ -102,6 +107,7 @@ int main(int argc, char *argv[])
           server->remove(connected[i]);
           connected.erase(connected.begin() + i);
           delete connected[i];
+          delete analyser;
         }
       }
     }

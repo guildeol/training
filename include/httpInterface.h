@@ -17,14 +17,11 @@
 #include <string>
 #include <map>
 
-#define INVALID_METHOD    -1000
-#define INVALID_PROTOCOL  -2000
-
 class HTTPInterface
 {
 public:
 
-  HTTPInterface(std::string &request, const char *root = ".");
+  HTTPInterface(std::string &request);
 
   int validate();
 
@@ -33,7 +30,6 @@ public:
   std::string method;
   std::string resource;
   std::string protocol;
-  std::string root;
 
 private:
 
