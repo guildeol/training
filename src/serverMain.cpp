@@ -4,26 +4,27 @@
 
 #include <iostream>
 #include <vector>
+#include <array>
 
 using namespace std;
 
 int main(int argc, char *argv[])
 {
-  int rc = 0;
+  const int backlog = 10;
+
+  int rc[backlog];
 
   struct addrinfo hints;
 
   ServerSocket *server = NULL;
   ClientSocket *newSocket = NULL;
 
-  const int backlog = 1;
-
   vector<ClientSocket *> connected;
-
-  string request;
+  string request[backlog];
+  array<bool, backlog> hasRequest;
 
   string root("./");
-  char *port = "8080";
+  char *port = "80";
   const int poolSize = 1024;
 
   char buffer[poolSize];
@@ -51,6 +52,7 @@ int main(int argc, char *argv[])
     server->add(server, POLLIN);
 
     connected.reserve(backlog);
+    hasRequest.fill(false);
 
     cout << "Aguardando conexões..." << endl;
 
@@ -72,42 +74,43 @@ int main(int argc, char *argv[])
 
       for (unsigned int i = 0; i < connected.size(); i++)
       {
-        if (server->canRead(connected[i]))
+        if (server->canRead(connected[i]) && !hasRequest[i])
         {
           // Pegar a requisição HTTP
-          rc = connected[i]->readLine(buffer, poolSize);
+          rc[i] = connected[i]->readLine(buffer, poolSize);
 
           if(rc <= 0)
             break;
 
-          request.assign(buffer, rc);
+          request[i].assign(buffer, rc[i]);
 
           //Lendo headers
           do
           {
-            rc = connected[i]->readLine(buffer, poolSize);
+            rc[i] = connected[i]->readLine(buffer, poolSize);
 
-            if(rc <= 0)
+            if(rc[i] <= 0)
               break;
-
-            cout.write(buffer, rc);
-            cout.flush();
           } while (strncmp(buffer, "\r\n", strlen("\r\n")));
 
-          HTTPInterface *analyser = new HTTPInterface(request);
-          rc = analyser->validate();
+          hasRequest[i] = true;
+        }
 
-          while(!server->canSend(connected[i]))
-            ;
+        if(server->canSend(connected[i]) && hasRequest[i])
+        {
+          HTTPInterface *analyser = new HTTPInterface(request[i]);
+          rc[i] = analyser->validate();;
 
-          if(rc != 0)
-            analyser->respond(rc, connected[i]);
+          if(rc[i] != 0)
+            analyser->respond(rc[i], connected[i]);
 
           //Terminou a requisicao do cliente
           server->remove(connected[i]);
           connected.erase(connected.begin() + i);
           delete connected[i];
           delete analyser;
+
+          hasRequest[i] = false;
         }
       }
     }
