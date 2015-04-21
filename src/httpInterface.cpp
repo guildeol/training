@@ -52,27 +52,30 @@ HTTPInterface::HTTPInterface(std::string &request):
   this->protocol.assign(request, second + 1  , end - second - 1);
 }
 
-int HTTPInterface::validate()
+int HTTPInterface::validate(std::string &root)
 {
   if (this->method.empty() || this->resource.empty() || this->protocol.empty())
-    return 400;
-
-  if (this->knownMethods.find(this->method) == std::string::npos)
-    return 501;
+    return BAD_REQUEST;
 
   if (this->knownProtocols.find(this->protocol) == std::string::npos)
-    return 505;
+  {
+    this->protocol.assign("HTTP/1.0");
+    return NOT_SUPPORTED;
+  }
+
+  if (this->knownMethods.find(this->method) == std::string::npos)
+    return NOT_IMPLEMENTED;
 
   if (this->resource.find("../") != std::string::npos)
-    return 403;
+    return FORBIDDEN;
 
-  if (!fileExists(this->resource))
-    return 404;
+  if (!fileExists(root + this->resource))
+    return NOT_FOUND;
 
-  return 200;
+  return OK;
 }
 
-int HTTPInterface::respond(int code, ClientSocket *socket)
+int HTTPInterface::respond(int code, std::string &root, ClientSocket *socket)
 {
   using namespace std;
 
@@ -87,7 +90,7 @@ int HTTPInterface::respond(int code, ClientSocket *socket)
 
   try
   {
-    this->fetch(file, code, length);
+    this->fetch(file, code, length, root);
 
     time_t now;
     struct tm *t;
@@ -101,8 +104,14 @@ int HTTPInterface::respond(int code, ClientSocket *socket)
                  + "\r\n");
     socket->send("Date: " + timeString + "\r\n");
     socket->send("Server: aker-training/0.1\r\n");
-    socket->send("Content-Type: application/octet-stream\r\n");
+
+    if(code == OK)
+      socket->send("Content-Type: application/octet-stream\r\n");
+    else
+      socket->send("Content-Type: text/html\r\n");
+
     socket->send("Content-Length: " + to_string(length) + "\r\n");
+    socket->send("Connection: Close\r\n");
     socket->send("\r\n");
 
     do
@@ -126,12 +135,13 @@ int HTTPInterface::respond(int code, ClientSocket *socket)
   return 0;
 }
 
-void HTTPInterface::fetch(std::ifstream &file, int code, int &length)
+void HTTPInterface::fetch(std::ifstream &file, int code, int &length,
+                          std:: string &root)
 {
   using namespace std;
 
   if (code == 200)
-    file.open(this->resource, ios::binary);
+    file.open(root + this->resource, ios::binary);
   else
     file.open(responseFolder + to_string(code)+ ".html", ios::binary);
 

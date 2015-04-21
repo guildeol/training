@@ -37,14 +37,14 @@ int main(int argc, char *argv[])
   switch (argc)
   {
     case 2:
-      root.assign(argv[1]);
+      port.assign(argv[1]);
       break;
     case 3:
-      root.assign(argv[1]);
-      port.assign(argv[2]);
+      port.assign(argv[1]);
+      root.assign(argv[2]);
       break;
     default:
-      cout << "\tUso: server <raiz> <porta>" << endl;
+      cout << "\tUso: server <porta> <raiz>" << endl;
       cout << "\tNota: Certas portas nao podem ser acessadas"
            << "por usuarios comuns!" << endl;
 
@@ -119,10 +119,10 @@ int main(int argc, char *argv[])
         if(server->canSend(connected[i]) && hasRequest[i])
         {
           HTTPInterface *analyser = new HTTPInterface(request[i]);
-          rc[i] = analyser->validate();;
+          rc[i] = analyser->validate(root);
 
           if(rc[i] != 0)
-            analyser->respond(rc[i], connected[i]);
+            analyser->respond(rc[i], root, connected[i]);
 
           //Terminou a requisicao do cliente
           server->remove(connected[i]);

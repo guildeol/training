@@ -17,15 +17,22 @@
 #include <string>
 #include <map>
 
+#define OK              200
+#define BAD_REQUEST     400
+#define NOT_FOUND       404
+#define FORBIDDEN       403
+#define NOT_IMPLEMENTED 501
+#define NOT_SUPPORTED   505
+
 class HTTPInterface
 {
 public:
 
   HTTPInterface(std::string &request);
 
-  int validate();
+  int validate(std::string &root);
 
-  int respond(int code, ClientSocket *socket);
+  int respond(int code, std::string &root, ClientSocket *socket);
 
   std::string method;
   std::string resource;
@@ -33,7 +40,7 @@ public:
 
 private:
 
-  void fetch(std::ifstream &file, int code, int &length);
+  void fetch(std::ifstream &file, int code, int &length, std::string &root);
   std::string timeToString(struct tm &t);
 
   std::string responseFolder;
