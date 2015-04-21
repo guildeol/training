@@ -27,7 +27,6 @@
 
 //Declaração adiantada de ServerSocket, para usar com friend
 class ServerSocket;
-class ClientSocket;
 
 /*!
  * \class Socket
@@ -36,7 +35,6 @@ class ClientSocket;
 class Socket
 {
 friend class ServerSocket;
-friend class ClientSocket;
 
 public:
   /*!
@@ -50,7 +48,7 @@ public:
    * \throw runtime_error ao chamar getaddrinfo.
    * \throw bad_alloc caso a alocação de pool falhar.
    */
-  Socket(const std::string *address, char *port, const addrinfo &hints,
+  Socket(const std::string *address, const std::string port, const addrinfo &hints,
          const int poolSize = 0);
 
   /*Destrutor. Libera recursos alocados.*/
@@ -98,7 +96,7 @@ protected:
   struct addrinfo hints;        /*!< Utilizada para configuração do socket.*/
   struct addrinfo *info = NULL; /*!< Guarda resultado do getaddrinfo().*/
 
-  char *port; /*!< Porta com a qual o socket se comunica.*/
+  std::string port; /*!< Porta com a qual o socket se comunica.*/
 
   /* Ambas as funcoes readLine e readAll operam as variaveis abaixo.*/
   char *pool = NULL;         /*!< Pool para leitura através de buffer.*/
@@ -108,10 +106,8 @@ protected:
   bool hasData = false;      /*!< Variavel para indicar se ha dados disponiveis
                               no pool.*/
 
-private:
-
-  /* Construtor privado, utilizado em accept.*/
-  Socket(int socketDescriptor, char *port, int poolSize);
+  /* Construtor utilizado por client socket.*/
+  Socket(int socketDescriptor, std::string port, int poolSize);
 };
 
 #endif

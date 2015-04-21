@@ -29,8 +29,8 @@ friend class ServerSocket;
 
 public:
 
-  ClientSocket(const std::string *address, char *port, const addrinfo &hints,
-               const int poolSize = 0);
+  ClientSocket(const std::string *address, const std::string port,
+               const addrinfo &hints, const int poolSize = 0);
 
   /*Tenta conexao ao endereço especificado no construtor*/
   void connect();
@@ -44,7 +44,7 @@ public:
 private:
 
   /* Construtor privado, utilizado em accept.*/
-  ClientSocket(int socketDescriptor, char *port, int poolSize);
+  ClientSocket(int socketDescriptor, const std::string port, int poolSize);
 };
 
 #endif

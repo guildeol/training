@@ -5,22 +5,20 @@
 #include <cerrno>
 #include <cstdio>
 
-Socket::Socket(const std::string *address, char *port,
+Socket::Socket(const std::string *address, const std::string port,
                              const addrinfo &hints, int poolSize)
 {
   this->hints = hints;
 
-  if(!port)
-    throw std::runtime_error(std::string("Porta Nula!"));
-
-  this->port = port;
+  this->port.assign(port);
 
   int rc = 0;
 
   if (address)
-    rc = getaddrinfo(address->c_str(), this->port, &this->hints, &this->info);
+    rc = getaddrinfo(address->c_str(), this->port.c_str(), &this->hints,
+                     &this->info);
   else
-    rc = getaddrinfo(NULL, this->port, &this->hints, &this->info);
+    rc = getaddrinfo(NULL, this->port.c_str(), &this->hints, &this->info);
 
   if (rc != 0)
     throw std::runtime_error(std::string("Erro em getaddrinfo: ")
@@ -49,10 +47,10 @@ Socket::Socket(const std::string *address, char *port,
   }
 }
 
-Socket::Socket(int socketDescriptor, char *port, int poolSize)
+Socket::Socket(int socketDescriptor, std::string port, int poolSize)
 {
   this->socketDescriptor = socketDescriptor;
-  this->port = port;
+  this->port.assign(port);
 
   try
   {

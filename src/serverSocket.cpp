@@ -5,7 +5,7 @@
 #include <cerrno>
 #include <cstdio>
 
-ServerSocket::ServerSocket(const std::string *address, char *port,
+ServerSocket::ServerSocket(const std::string *address, std::string port,
                            const addrinfo &hints, int poolSize,
                            int maxDescriptors):
   Socket(address, port, hints, poolSize)

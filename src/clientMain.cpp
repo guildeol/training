@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
   ofstream destination;
 
   ClientSocket *client = NULL;
-  char *port = "80";
+  std::string port("80");
   addrinfo hints;
   const int poolSize = 1024;
 

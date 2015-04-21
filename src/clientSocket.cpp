@@ -5,14 +5,15 @@
 #include <cerrno>
 #include <cstdio>
 
-ClientSocket::ClientSocket(const std::string *address, char *port, const addrinfo &hints,
-                           const int poolSize):
+ClientSocket::ClientSocket(const std::string *address, const std::string port,
+                           const addrinfo &hints, const int poolSize):
   Socket(address, port, hints, poolSize)
 {
   // Vazio, apenas constrói a classe base
 }
 
-ClientSocket::ClientSocket(int socketDescriptor, char *port, int poolSize):
+ClientSocket::ClientSocket(int socketDescriptor, const std::string port,
+                           int poolSize):
   Socket(socketDescriptor, port, poolSize)
 {
 

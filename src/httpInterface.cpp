@@ -45,7 +45,7 @@ HTTPInterface::HTTPInterface(std::string &request):
   //Copia todos os caracteres entre os espaços
   this->resource.assign(request, first + 1, second - first - 1);
 
-  if(this->resource[0] == '/')
+  if(this->resource.front() == '/')
     this->resource.assign(this->resource.c_str(), 1, this->resource.size());
 
   //Copia todos os caracteres antes do primeiro \r ou \n
@@ -57,17 +57,17 @@ int HTTPInterface::validate()
   if (this->method.empty() || this->resource.empty() || this->protocol.empty())
     return 400;
 
-  if (this->resource.find("../") != std::string::npos)
-    return 403;
-
-  if (!fileExists(this->resource))
-    return 404;
-
   if (this->knownMethods.find(this->method) == std::string::npos)
     return 501;
 
   if (this->knownProtocols.find(this->protocol) == std::string::npos)
     return 505;
+
+  if (this->resource.find("../") != std::string::npos)
+    return 403;
+
+  if (!fileExists(this->resource))
+    return 404;
 
   return 200;
 }

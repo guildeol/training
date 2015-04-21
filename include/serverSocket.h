@@ -38,8 +38,8 @@ public:
    * \throw runtime_error ao chamar getaddrinfo.
    * \throw bad_alloc caso a alocação de pool falhar.
    */
-  ServerSocket(const std::string *address, char *port, const addrinfo &hints,
-                int poolSize = 0, int maxDescriptors = 0);
+  ServerSocket(const std::string *address, std::string port,
+               const addrinfo &hints, int poolSize = 0, int maxDescriptors = 0);
 
   ~ServerSocket();
 

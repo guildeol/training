@@ -24,16 +24,36 @@ int main(int argc, char *argv[])
   array<bool, backlog> hasRequest;
 
   string root("./");
-  char *port = "80";
+  string port("8080");
   const int poolSize = 1024;
 
   char buffer[poolSize];
 
   /*
    * Diretorios devem ter o '/' ao final de seus nomes. Os arquivos requisitados
-   * devem ser validados, de forma a validar seu formato, que nao deve possuir
+   * devem ser validados em relação ao seu formato, que nao deve possuir
    * um '/' na frente.
    */
+  switch (argc)
+  {
+    case 2:
+      root.assign(argv[1]);
+      break;
+    case 3:
+      root.assign(argv[1]);
+      port.assign(argv[2]);
+      break;
+    default:
+      cout << "\tUso: server <raiz> <porta>" << endl;
+      cout << "\tNota: Certas portas nao podem ser acessadas"
+           << "por usuarios comuns!" << endl;
+
+      return -1;
+  }
+
+  if(root.back() != '/')
+    root.push_back('/');
+
   try
   {
     // Conexao tipo TCP, IPV4 ou V6, preenchimento automatico de IP
