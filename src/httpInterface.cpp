@@ -1,3 +1,8 @@
+/*!
+ * \file   httpInterface.cpp
+ * \brief  arquivo de implementação de um sistema que realiza analise e se
+ *         comunica de acordo com o padrão HTTP
+ */
 #include <httpInterface.h>
 
 #include <fstream>
@@ -21,6 +26,10 @@ inline bool fileExists (const std::string &filename)
   return result;
 }
 
+/*!
+ * Construtor da classe.
+ * \param[in] request string representando a requisicao feita ao servidor.
+ */
 HTTPInterface::HTTPInterface(std::string &request):
   method(""),
   resource(""),
@@ -53,6 +62,11 @@ HTTPInterface::HTTPInterface(std::string &request):
   this->protocol.assign(request, second + 1  , end - second - 1);
 }
 
+/*!
+ * \brief Metodo para validar os dados passado no construtor
+ * \param[in] root Diretorio raiz do servidor.
+ * \return Codigo HTTP de acordo com o avaliado.
+ */
 int HTTPInterface::validate(std::string &root)
 {
   using namespace std;
@@ -86,7 +100,12 @@ int HTTPInterface::validate(std::string &root)
   return OK;
 }
 
-int HTTPInterface::addHeader(char *header)
+/*!
+ * \brief Adiciona uma entrada ao vetor de headers da classe, usado na validacao.
+ * \param[in] header Header passado pelo servidor.
+ * \throw runtime_error caso header seja nulo.
+ */
+void HTTPInterface::addHeader(char *header)
 {
   if (!header)
     throw std::runtime_error("Erro: Header nulo");
@@ -101,10 +120,15 @@ int HTTPInterface::addHeader(char *header)
     std::cout << "Erro ao setar header!" << std::endl;
     throw e;
   }
-
-  return 0;
 }
 
+/*!
+ * \brief Envia resposta de acordo com o protocol HTTP para o socket especificado.
+ * \param[in] code Codigo da resposta, obtido via validate().
+ * \param[in] root Diretorio raiz do servido.
+ * \param[in] socket Socket pelo qual a resposta deve ser enviada.
+ * \throw runtime_error em caso de falha.
+ */
 int HTTPInterface::respond(int code, std::string &root, ClientSocket *socket)
 {
   using namespace std;
@@ -165,6 +189,16 @@ int HTTPInterface::respond(int code, std::string &root, ClientSocket *socket)
   return 0;
 }
 
+/*!
+ * \brief Busca o arquivo de resposta adequado, com base no codigo e nos nome contido
+ * em this->resource.
+ * \param[out] file referencia para o objeto com os dados do arquivo a ser
+ *                  enviado.
+ * \param[in] code Codigo da resposta, obtido via validate().
+ * \param[length] Recebe o tamanho do arquivo a ser enviado.
+ * \param[in] root Diretorio raiz do servidor.
+ * \throw runtime_error em caso de falha.
+ */
 void HTTPInterface::fetch(std::ifstream &file, int code, int &length,
                           std:: string &root)
 {
@@ -183,6 +217,11 @@ void HTTPInterface::fetch(std::ifstream &file, int code, int &length,
   file.seekg(0, file.beg);
 }
 
+/*!
+ * \brief Formata a data e hora no formado do RFC 1123.
+ * \param[int] t referencia para struct contendo os dados de data e hora.
+ * \return string formatada com data.
+ */
 std::string HTTPInterface::timeToString(struct tm &t)
 {
   const int length = strlen("WWW, DDD MMM YYYY HH:MM:SS GMT");

@@ -38,8 +38,7 @@ friend class ServerSocket;
 
 public:
   /*!
-   * Construtor com parametro adicional para
-   * especificacao do comportamento do socket.
+   * \brief Construtor da classe.
    * \param[in] address endereco do servidor desejado.
    * \param[in] hints struct com parametros para criacao do socket.
    * \param[in] port Numero da porta na qual a socket deve se comunicar

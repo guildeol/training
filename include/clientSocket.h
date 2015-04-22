@@ -24,7 +24,6 @@ class ServerSocket;
 
 class ClientSocket : public Socket
 {
-
 friend class ServerSocket;
 
 public:
