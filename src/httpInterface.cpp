@@ -10,6 +10,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <algorithm>
 
 inline bool fileExists (const std::string &filename)
 {
@@ -24,9 +25,9 @@ HTTPInterface::HTTPInterface(std::string &request):
   method(""),
   resource(""),
   protocol("HTTP/1.0"),
-  responseFolder("./responses/"),
   knownMethods("GET"),
-  knownProtocols("HTTP/1.0 HTTP/1.1")
+  knownProtocols("HTTP/1.0 HTTP/1.1"),
+  responseFolder("./responses/")
 {
   using namespace std;
 
@@ -54,6 +55,8 @@ HTTPInterface::HTTPInterface(std::string &request):
 
 int HTTPInterface::validate(std::string &root)
 {
+  using namespace std;
+
   if (this->method.empty() || this->resource.empty() || this->protocol.empty())
     return BAD_REQUEST;
 
@@ -72,7 +75,34 @@ int HTTPInterface::validate(std::string &root)
   if (!fileExists(root + this->resource))
     return NOT_FOUND;
 
+  // Checando os headers
+  bool found = false;
+  for (unsigned int i = 0; i < headers.size() && !found; i++)
+    found = headers[i].find("Host: ") == 0;
+
+  if(!found && this->protocol.compare("HTTP/1.1") == 0)
+    return BAD_REQUEST;
+
   return OK;
+}
+
+int HTTPInterface::addHeader(char *header)
+{
+  if (!header)
+    throw std::runtime_error("Erro: Header nulo");
+
+  try
+  {
+    std::string transfer(header);
+    this->headers.push_back(transfer);
+  }
+  catch (std::exception &e)
+  {
+    std::cout << "Erro ao setar header!" << std::endl;
+    throw e;
+  }
+
+  return 0;
 }
 
 int HTTPInterface::respond(int code, std::string &root, ClientSocket *socket)

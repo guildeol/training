@@ -12,22 +12,30 @@
 using namespace std;
 
 ServerSocket *server = nullptr;
-HTTPInterface *analyser = nullptr;
+
+vector<HTTPInterface *> analyser;
 vector<ClientSocket *> connected;
 int connections = 0;
+
+#define CLEAN(pointer)    \
+  if (pointer != nullptr) \
+  {                       \
+    delete pointer;       \
+    pointer = nullptr;    \
+  }
+
 
 void cleanup(int cookie)
 {
   cout << "\nInterrompendo o servidor..." << endl;
 
-  if (server)
-    delete server;
-
-  if (analyser)
-    delete analyser;
+  CLEAN(server);
 
   for (int i = 0; i < connections; i++)
-    delete connected[i];
+    CLEAN(analyser[i]);
+
+  for (int i = 0; i < connections; i++)
+    CLEAN(connected[i]);
 
   return;
 }
@@ -50,6 +58,8 @@ int main(int argc, char *argv[])
   const int poolSize = 1024;
 
   char buffer[poolSize];
+
+  string header;
 
   signal(SIGINT, cleanup);
 
@@ -78,8 +88,6 @@ int main(int argc, char *argv[])
   if(root.back() != '/')
     root.push_back('/');
 
-
-
   try
   {
     // Conexao tipo TCP, IPV4 ou V6, preenchimento automatico de IP
@@ -98,6 +106,10 @@ int main(int argc, char *argv[])
     server->add(server, POLLIN);
 
     connected.reserve(backlog);
+    fill(connected.begin(), connected.end(), nullptr);
+    analyser.reserve(backlog);
+    fill(analyser.begin(), analyser.end(), nullptr);
+
     hasRequest.fill(false);
 
     cout << "Aguardando conexões..." << endl;
@@ -121,43 +133,44 @@ int main(int argc, char *argv[])
 
       for (unsigned int i = 0; i < connected.size(); i++)
       {
-        if (server->canRead(connected[i]) && !hasRequest[i])
+        if (server->canRead(connected[i]))
         {
           // Pegar a requisição HTTP
-          rc[i] = connected[i]->readLine(buffer, poolSize);
-
-          if(rc <= 0)
-            break;
-
-          request[i].assign(buffer, rc[i]);
-
-          //Lendo headers
-          do
+          if (!hasRequest[i])
           {
             rc[i] = connected[i]->readLine(buffer, poolSize);
 
-            if(rc[i] <= 0)
+            if(rc <= 0)
               break;
-          } while (strncmp(buffer, "\r\n", strlen("\r\n")));
 
-          hasRequest[i] = true;
+            request[i].assign(buffer, rc[i]);
+            analyser[i] = new HTTPInterface(request[i]);
+
+            hasRequest[i] = true;
+          }
+
+          rc[i] = connected[i]->readLine(buffer, poolSize);
+          analyser[i]->addHeader(buffer);
+
+          if (strncmp(buffer, "\r\n", strlen("\r\n")))
+            continue;
+
+          if (strncmp(buffer, "\n", strlen("\n")))
+            continue;
         }
 
         if(server->canSend(connected[i]) && hasRequest[i])
         {
-          analyser = new HTTPInterface(request[i]);
-          rc[i] = analyser->validate(root);
+          rc[i] = analyser[i]->validate(root);
 
           if(rc[i] != 0)
-            analyser->respond(rc[i], root, connected[i]);
+            analyser[i]->respond(rc[i], root, connected[i]);
 
           //Terminou a requisicao do cliente
           server->remove(connected[i]);
-          delete connected[i];
-          delete analyser;
 
-          connected[i] = nullptr;
-          analyser = nullptr;
+          CLEAN(connected[i]);
+          CLEAN(analyser[i]);
 
           connected.erase(connected.begin() + i);
 
@@ -172,8 +185,7 @@ int main(int argc, char *argv[])
     cout << e.what() << endl;
   }
 
-  if(server)
-    delete server;
+  CLEAN(server);
 
   return 0;
 }
