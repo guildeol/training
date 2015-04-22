@@ -25,6 +25,11 @@
 #define NOT_IMPLEMENTED 501
 #define NOT_SUPPORTED   505
 
+/*!
+ * \class HTTPInterface
+ * \brief Interface para interpretacao e comunicacao de acordo com o protocolo
+ *        HTTP.
+ */
 class HTTPInterface
 {
 public:
@@ -33,7 +38,7 @@ public:
 
   int validate(std::string &root);
 
-  int addHeader(char *header);
+  void addHeader(char *header);
 
   int respond(int code, std::string &root, ClientSocket *socket);
 
