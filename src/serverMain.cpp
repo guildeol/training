@@ -150,8 +150,12 @@ int main(int argc, char *argv[])
           }
 
           rc[i] = connected[i]->readLine(buffer, poolSize);
-          analyser[i]->addHeader(buffer);
 
+          if (rc[i] > 0)
+            analyser[i]->addHeader(buffer);
+          else
+            break;
+            
           if (strncmp(buffer, "\r\n", strlen("\r\n")))
             continue;
 

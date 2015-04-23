@@ -178,6 +178,8 @@ int HTTPInterface::respond(int code, std::string &root, ClientSocket *socket)
         throw runtime_error(string("Erro ao enviar arquivo para cliente!"));
 
     } while(total < length);
+
+    file.close();
   }
   catch (exception &e)
   {
