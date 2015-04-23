@@ -15,7 +15,6 @@
 
 #include <cstdio>
 #include <cstring>
-#include <algorithm>
 
 inline bool fileExists (const std::string &filename)
 {

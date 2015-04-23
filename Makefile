@@ -9,9 +9,11 @@ CC_FLAGS = -Wno-error -I$(INCLUDE_FOLDER) -std=c++11 -g -Wno-write-strings \
  					 -pedantic -Wall
 
 SUPPORT_FILES = $(addprefix $(SRC_FOLDER), socket.cpp serverSocket.cpp \
-																					 httpInterface.cpp clientSocket.cpp)
+																					 httpInterface.cpp clientSocket.cpp \
+																					 tokenBucket.cpp)
 SUPPORT_OBJS = $(addprefix $(OBJ_FOLDER), socket.o serverSocket.o \
-																					 httpInterface.o clientSocket.o)
+																					httpInterface.o clientSocket.o \
+																					tokenBucket.o)
 
 .PHONY: all
 .PHONY: doc
