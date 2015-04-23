@@ -1,17 +1,20 @@
 #include <tokenBucket.h>
 
-TokenBucket::TokenBucket(int maxTokens, int outRate, int refillRate)
+TokenBucket::TokenBucket(int refillRate)
 {
-  this->maxTokens = maxTokens;
-  this->tokens = maxTokens;
-  this->outRate = outRate;
+  this->maxTokens = refillRate;
+  this->tokens = refillRate;
   this->refillRate = refillRate;
 }
 
 bool TokenBucket::consume(int amount)
 {
+  using namespace std::chrono;
+
   if (amount > this->tokens)
     return false;
+
+  consumeTime = steady_clock::now();
 
   this->tokens -= amount;
   return true;
@@ -19,8 +22,15 @@ bool TokenBucket::consume(int amount)
 
 int TokenBucket::replenish()
 {
-  refillRate < (maxTokens - tokens) ? tokens += refillRate :
-                                      tokens += maxTokens - tokens;
+  using namespace std::chrono;
+
+  replenishTime = steady_clock::now();
+
+  ellapsedTime = duration_cast<duration<double>>(replenishTime - consumeTime);
+
+  if (ellapsedTime.count() > 1.0)
+    refillRate < (maxTokens - tokens) ? tokens += refillRate :
+                                        tokens += maxTokens - tokens;
 
   return tokens;
 }

@@ -9,6 +9,8 @@
 #ifndef TOKENBUCKET_H
 #define TOKENBUCKET_H
 
+#include <chrono>
+
 /*!
  * \class TokenBucket
  * \brief Classe para implementacao do algoritmo token bucket de controle de
@@ -21,11 +23,10 @@ public:
 
   /*!
    * \brief Construtor da classe.
-   * \param[in] maxTokens Quantidade maxima de token que o balde suporta.
-   * \param[in] outRate taxa (em bytes/seg) de transferencia desejada.
-   * \param[in] refillRate Quantidade de tokens repostos por segundo.
+   * \param[in] refillRate Quantidade de tokens repostos por segundo. O balde é
+                inicializado com esse valor.
    */
-  TokenBucket(int maxTokens, int outRate, int refillRate);
+  TokenBucket(int refillRate);
 
   /*!
    * \brief Tenta consumir uma certa quantidade de tokens.
@@ -46,6 +47,10 @@ private:
   int outRate = 0;
   int refillRate = 0;
   int tokens = 0;
+
+  std::chrono::steady_clock::time_point consumeTime;
+  std::chrono::steady_clock::time_point replenishTime;
+  std::chrono::duration<double> ellapsedTime;
 
 };
 

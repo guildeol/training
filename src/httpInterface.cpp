@@ -4,6 +4,7 @@
  *         comunica de acordo com o padrão HTTP
  */
 #include <httpInterface.h>
+#include <tokenBucket.h>
 
 #include <fstream>
 #include <sstream>
@@ -167,15 +168,22 @@ int HTTPInterface::respond(int code, std::string &root, ClientSocket *socket)
     socket->send("Connection: Close\r\n");
     socket->send("\r\n");
 
+    TokenBucket bucket(2500000, 2500000, 2500000);
+
     do
     {
-      file.read(buffer, blockSize);
-      total += file.gcount();
+      if(bucket.consume(blockSize))
+      {
+        file.read(buffer, blockSize);
+        total += file.gcount();
 
-      rc = socket->sendAll(buffer, file.gcount());
+        rc = socket->sendAll(buffer, file.gcount());
 
-      if(rc != 0)
-        throw runtime_error(string("Erro ao enviar arquivo para cliente!"));
+        if(rc != 0)
+          throw runtime_error(string("Erro ao enviar arquivo para cliente!"));
+      }
+
+      bucket.replenish();
 
     } while(total < length);
 
