@@ -3,7 +3,7 @@
  * \brief  arquivo de implementação de um sistema que realiza analise e se
  *         comunica de acordo com o padrão HTTP
  */
-#include <httpInterface.h>
+#include <requestHandler.h>
 #include <tokenBucket.h>
 
 #include <fstream>
@@ -30,7 +30,7 @@ inline bool fileExists (const std::string &filename)
  * Construtor da classe.
  * \param[in] request string representando a requisicao feita ao servidor.
  */
-HTTPInterface::HTTPInterface(std::string &request):
+RequestHandler::RequestHandler(std::string &request):
   method(""),
   resource(""),
   protocol("HTTP/1.0"),
@@ -67,7 +67,7 @@ HTTPInterface::HTTPInterface(std::string &request):
  * \param[in] root Diretorio raiz do servidor.
  * \return Codigo HTTP de acordo com o avaliado.
  */
-int HTTPInterface::validate(std::string &root)
+int RequestHandler::validate(std::string &root)
 {
   using namespace std;
 
@@ -105,7 +105,7 @@ int HTTPInterface::validate(std::string &root)
  * \param[in] header Header passado pelo servidor.
  * \throw runtime_error caso header seja nulo.
  */
-void HTTPInterface::addHeader(char *header)
+void RequestHandler::addHeader(char *header)
 {
   if (!header)
     throw std::runtime_error("Erro: Header nulo");
@@ -129,7 +129,7 @@ void HTTPInterface::addHeader(char *header)
  * \param[in] socket Socket pelo qual a resposta deve ser enviada.
  * \throw runtime_error em caso de falha.
  */
-int HTTPInterface::respond(int code, std::string &root, ClientSocket *socket)
+int RequestHandler::respond(int code, std::string &root, ClientSocket *socket)
 {
   using namespace std;
 
@@ -140,7 +140,7 @@ int HTTPInterface::respond(int code, std::string &root, ClientSocket *socket)
   char buffer[blockSize];
   int total = 0;
 
-  int rc = 0;
+  TokenBucket bucket(2500000);
 
   try
   {
@@ -168,8 +168,6 @@ int HTTPInterface::respond(int code, std::string &root, ClientSocket *socket)
     socket->send("Connection: Close\r\n");
     socket->send("\r\n");
 
-    TokenBucket bucket(2500000, 2500000, 2500000);
-
     do
     {
       if(bucket.consume(blockSize))
@@ -177,12 +175,8 @@ int HTTPInterface::respond(int code, std::string &root, ClientSocket *socket)
         file.read(buffer, blockSize);
         total += file.gcount();
 
-        rc = socket->sendAll(buffer, file.gcount());
-
-        if(rc != 0)
-          throw runtime_error(string("Erro ao enviar arquivo para cliente!"));
+        socket->sendAll(buffer, file.gcount());
       }
-
       bucket.replenish();
 
     } while(total < length);
@@ -208,7 +202,7 @@ int HTTPInterface::respond(int code, std::string &root, ClientSocket *socket)
  * \param[in] root Diretorio raiz do servidor.
  * \throw runtime_error em caso de falha.
  */
-void HTTPInterface::fetch(std::ifstream &file, int code, int &length,
+void RequestHandler::fetch(std::ifstream &file, int code, int &length,
                           std:: string &root)
 {
   using namespace std;
@@ -231,7 +225,7 @@ void HTTPInterface::fetch(std::ifstream &file, int code, int &length,
  * \param[int] t referencia para struct contendo os dados de data e hora.
  * \return string formatada com data.
  */
-std::string HTTPInterface::timeToString(struct tm &t)
+std::string RequestHandler::timeToString(struct tm &t)
 {
   const int length = strlen("WWW, DDD MMM YYYY HH:MM:SS GMT");
   char timeBuffer[length];

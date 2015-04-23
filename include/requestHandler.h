@@ -7,8 +7,8 @@
 * \author Guilherme Costa <glhrmcosta91@gmail.com>
 */
 
-#ifndef HTTPINTERFACE_H
-#define HTTPINTERFACE_H
+#ifndef REQUESTHANDLER_H
+#define REQUESTHANDLER_H
 
 #include <socket.h>
 #include <clientSocket.h>
@@ -26,15 +26,14 @@
 #define NOT_SUPPORTED   505
 
 /*!
- * \class HTTPInterface
- * \brief Interface para interpretacao e comunicacao de acordo com o protocolo
- *        HTTP.
+ * \class RequestHandler
+ * \brief Classe para interpretacao e resolução de requisicoes HTTP.
  */
-class HTTPInterface
+class RequestHandler
 {
 public:
 
-  HTTPInterface(std::string &request);
+  RequestHandler(std::string &request);
 
   int validate(std::string &root);
 

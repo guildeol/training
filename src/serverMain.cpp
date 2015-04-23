@@ -1,6 +1,6 @@
 #include <socket.h>
 #include <serverSocket.h>
-#include <httpInterface.h>
+#include <requestHandler.h>
 
 #include <iostream>
 #include <vector>
@@ -13,7 +13,7 @@ using namespace std;
 
 ServerSocket *server = nullptr;
 
-vector<HTTPInterface *> analyser;
+vector<RequestHandler *> handler;
 vector<ClientSocket *> connected;
 int connections = 0;
 
@@ -32,7 +32,7 @@ void cleanup(int cookie)
   CLEAN(server);
 
   for (int i = 0; i < connections; i++)
-    CLEAN(analyser[i]);
+    CLEAN(handler[i]);
 
   for (int i = 0; i < connections; i++)
     CLEAN(connected[i]);
@@ -107,8 +107,8 @@ int main(int argc, char *argv[])
 
     connected.reserve(backlog);
     fill(connected.begin(), connected.end(), nullptr);
-    analyser.reserve(backlog);
-    fill(analyser.begin(), analyser.end(), nullptr);
+    handler.reserve(backlog);
+    fill(handler.begin(), handler.end(), nullptr);
 
     hasRequest.fill(false);
 
@@ -123,6 +123,7 @@ int main(int argc, char *argv[])
         newSocket = server->accept(poolSize);
 
         //Verificar o que acontece se backlog + 1 clientes se conectarem
+        // Codigo esta aceitando mais de uma requisicao de um mesmo cliente...
         if (connected.size() < backlog)
         {
           server->add(newSocket, POLLIN|POLLOUT);
@@ -144,7 +145,7 @@ int main(int argc, char *argv[])
               break;
 
             request[i].assign(buffer, rc[i]);
-            analyser[i] = new HTTPInterface(request[i]);
+            handler[i] = new RequestHandler(request[i]);
 
             hasRequest[i] = true;
           }
@@ -152,10 +153,10 @@ int main(int argc, char *argv[])
           rc[i] = connected[i]->readLine(buffer, poolSize);
 
           if (rc[i] > 0)
-            analyser[i]->addHeader(buffer);
+            handler[i]->addHeader(buffer);
           else
             break;
-            
+
           if (strncmp(buffer, "\r\n", strlen("\r\n")))
             continue;
 
@@ -165,16 +166,16 @@ int main(int argc, char *argv[])
 
         if(server->canSend(connected[i]) && hasRequest[i])
         {
-          rc[i] = analyser[i]->validate(root);
+          rc[i] = handler[i]->validate(root);
 
           if(rc[i] != 0)
-            analyser[i]->respond(rc[i], root, connected[i]);
+            handler[i]->respond(rc[i], root, connected[i]);
 
           //Terminou a requisicao do cliente
           server->remove(connected[i]);
 
           CLEAN(connected[i]);
-          CLEAN(analyser[i]);
+          CLEAN(handler[i]);
 
           connected.erase(connected.begin() + i);
 
