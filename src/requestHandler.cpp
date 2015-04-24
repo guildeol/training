@@ -129,67 +129,43 @@ void RequestHandler::addHeader(char *header)
  * \param[in] socket Socket pelo qual a resposta deve ser enviada.
  * \throw runtime_error em caso de falha.
  */
-int RequestHandler::respond(int code, std::string &root, ClientSocket *socket)
+bool RequestHandler::respond(int code, std::string &root, ClientSocket *socket)
 {
   using namespace std;
 
-  ifstream file;
-  int length = 0;
-
   const int blockSize = 512;
   char buffer[blockSize];
-  int total = 0;
 
-  TokenBucket bucket(2500000);
+  static TokenBucket bucket(2621440);
+  static int total = 0;
+  static ifstream file;
+  static int fileLength = 0;
 
-  try
+  bool done = false;
+
+  if (total == 0)
   {
-    this->fetch(file, code, length, root);
+    this->fetch(file, code, fileLength, root);
+    this->sendHeaders(socket, code, fileLength);
+  }
 
-    time_t now;
-    struct tm *t;
+  if(bucket.consume(blockSize))
+  {
+    file.read(buffer, blockSize);
+    total += file.gcount();
+    socket->sendAll(buffer, file.gcount());
+  }
 
-    time(&now);
-    t = gmtime(&now);
+  bucket.replenish();
 
-    string timeString = timeToString(*t);
-
-    socket->send(this->protocol + " " + to_string(code) + " " + reason[code]
-                 + "\r\n");
-    socket->send("Date: " + timeString + "\r\n");
-    socket->send("Server: aker-training/0.1\r\n");
-
-    if(code == OK)
-      socket->send("Content-Type: application/octet-stream\r\n");
-    else
-      socket->send("Content-Type: text/html\r\n");
-
-    socket->send("Content-Length: " + to_string(length) + "\r\n");
-    socket->send("Connection: Close\r\n");
-    socket->send("\r\n");
-
-    do
-    {
-      if(bucket.consume(blockSize))
-      {
-        file.read(buffer, blockSize);
-        total += file.gcount();
-
-        socket->sendAll(buffer, file.gcount());
-      }
-      bucket.replenish();
-
-    } while(total < length);
-
+  if(total >= fileLength)
+  {
+    total = 0;
     file.close();
-  }
-  catch (exception &e)
-  {
-    cout << "Erro ao enviar o arquivo de resposta!" << endl;
-    throw e;
+    done = true;
   }
 
-  return 0;
+  return done;
 }
 
 /*!
@@ -233,4 +209,34 @@ std::string RequestHandler::timeToString(struct tm &t)
   strftime(timeBuffer, length, "%a, %d %b %Y %T GMT", &t);
 
   return std::string(timeBuffer);
+}
+
+/*!
+ * \brief Envia os headers da resposta para o cliente.
+ * \param[int] socket Socket pelo qual os dados serão enviados.
+ * \param[length] Recebe o tamanho do arquivo a ser enviado.
+ */
+void RequestHandler::sendHeaders(ClientSocket *socket, int code, int fileLength)
+{
+  time_t now;
+  struct tm *t;
+  std::string timeString;
+
+  time(&now);
+  t = gmtime(&now);
+  timeString = timeToString(*t);
+
+  socket->send(this->protocol + " " + std::to_string(code) + " " + reason[code]
+               + "\r\n");
+  socket->send("Date: " + timeString + "\r\n");
+  socket->send("Server: aker-training/0.1\r\n");
+
+  if(code == OK)
+    socket->send("Content-Type: application/octet-stream\r\n");
+  else
+    socket->send("Content-Type: text/html\r\n");
+
+  socket->send("Content-Length: " + std::to_string(fileLength) + "\r\n");
+  socket->send("Connection: Close\r\n");
+  socket->send("\r\n");
 }

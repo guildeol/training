@@ -39,7 +39,7 @@ public:
 
   void addHeader(char *header);
 
-  int respond(int code, std::string &root, ClientSocket *socket);
+  bool respond(int code, std::string &root, ClientSocket *socket);
 
   std::string method;
   std::string resource;
@@ -49,6 +49,8 @@ private:
 
   void fetch(std::ifstream &file, int code, int &length, std::string &root);
   std::string timeToString(struct tm &t);
+
+  void sendHeaders(ClientSocket *socket, int code, int fileLength);
 
   std::string knownMethods;
   std::string knownProtocols;
