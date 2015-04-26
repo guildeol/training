@@ -1,6 +1,6 @@
 #include <tokenBucket.h>
 
-TokenBucket::TokenBucket(int refillRate)
+void TokenBucket::setRate(int refillRate)
 {
   this->maxTokens = refillRate;
   this->tokens = refillRate;

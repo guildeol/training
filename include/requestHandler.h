@@ -12,7 +12,9 @@
 
 #include <socket.h>
 #include <clientSocket.h>
+#include <tokenBucket.h>
 
+#include <fstream>
 #include <ctime>
 #include <string>
 #include <map>
@@ -47,7 +49,7 @@ public:
 
 private:
 
-  void fetch(std::ifstream &file, int code, int &length, std::string &root);
+  void fetch(int code, std::string &root);
   std::string timeToString(struct tm &t);
 
   void sendHeaders(ClientSocket *socket, int code, int fileLength);
@@ -63,6 +65,11 @@ private:
                                        {403, "Forbidden"}, {404, "Not Found"},
                                        {501, "Not Implemented"},
                                        {505, "HTTP Version Not Supported"}};
+
+  TokenBucket bucket;
+  int totalSent = 0;
+  std::ifstream file;
+  int fileLength = 0;
 };
 
 #endif

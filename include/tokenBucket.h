@@ -22,11 +22,11 @@ class TokenBucket
 public:
 
   /*!
-   * \brief Construtor da classe.
+   * \brief Define a taxa de reposição de tokens.
    * \param[in] refillRate Quantidade de tokens repostos por segundo. O balde é
                 inicializado com esse valor.
    */
-  TokenBucket(int refillRate);
+  void setRate(int refillRate);
 
   /*!
    * \brief Tenta consumir uma certa quantidade de tokens.

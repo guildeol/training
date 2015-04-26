@@ -16,6 +16,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <cerrno>
 
 inline bool fileExists (const std::string &filename)
 {
@@ -60,6 +61,8 @@ RequestHandler::RequestHandler(std::string &request):
 
   //Copia todos os caracteres antes do primeiro \r ou \n
   this->protocol.assign(request, second + 1  , end - second - 1);
+
+  this->bucket.setRate(2500000);
 }
 
 /*!
@@ -136,32 +139,37 @@ bool RequestHandler::respond(int code, std::string &root, ClientSocket *socket)
   const int blockSize = 512;
   char buffer[blockSize];
 
-  static TokenBucket bucket(2621440);
-  static int total = 0;
-  static ifstream file;
-  static int fileLength = 0;
-
   bool done = false;
 
-  if (total == 0)
+  if (this->totalSent == 0)
   {
-    this->fetch(file, code, fileLength, root);
-    this->sendHeaders(socket, code, fileLength);
+    this->fetch(code, root);
+    this->sendHeaders(socket, code, this->fileLength);
   }
 
-  if(bucket.consume(blockSize))
+  if(this->bucket.consume(blockSize))
   {
-    file.read(buffer, blockSize);
-    total += file.gcount();
-    socket->sendAll(buffer, file.gcount());
+
+    try
+    {
+      this->file.read(buffer, blockSize);
+      this->totalSent += this->file.gcount();
+
+      socket->sendAll(buffer, this->file.gcount());
+    }
+    catch (exception &e)
+    {
+      throw runtime_error(std::string("Erro ao enviar arquivo de resposta: ")
+                          + strerror(errno));
+    }
   }
 
   bucket.replenish();
 
-  if(total >= fileLength)
+  if(this->totalSent >= this->fileLength)
   {
-    total = 0;
-    file.close();
+    this->totalSent = 0;
+    this->file.close();
     done = true;
   }
 
@@ -178,22 +186,21 @@ bool RequestHandler::respond(int code, std::string &root, ClientSocket *socket)
  * \param[in] root Diretorio raiz do servidor.
  * \throw runtime_error em caso de falha.
  */
-void RequestHandler::fetch(std::ifstream &file, int code, int &length,
-                          std:: string &root)
+void RequestHandler::fetch(int code, std:: string &root)
 {
   using namespace std;
 
   if (code == 200)
-    file.open(root + this->resource, ios::binary);
+    this->file.open(root + this->resource, ios::binary);
   else
-    file.open(responseFolder + to_string(code)+ ".html", ios::binary);
+    this->file.open(responseFolder + to_string(code)+ ".html", ios::binary);
 
-  if(!file.good())
+  if(!this->file.good())
     throw runtime_error(std::string("Erro ao abrir o arquivo de resposta!"));
 
-  file.seekg(0, file.end);
-  length = file.tellg();
-  file.seekg(0, file.beg);
+  this->file.seekg(0, this->file.end);
+  this->fileLength = file.tellg();
+  this->file.seekg(0, this->file.beg);
 }
 
 /*!

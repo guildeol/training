@@ -52,6 +52,7 @@ int main(int argc, char *argv[])
 
   string request[backlog];
   array<bool, backlog> hasRequest;
+  array<bool, backlog> done;
 
   string root("./");
   string port("8080");
@@ -70,9 +71,6 @@ int main(int argc, char *argv[])
    */
   switch (argc)
   {
-    case 2:
-      port.assign(argv[1]);
-      break;
     case 3:
       port.assign(argv[1]);
       root.assign(argv[2]);
@@ -111,6 +109,7 @@ int main(int argc, char *argv[])
     fill(handler.begin(), handler.end(), nullptr);
 
     hasRequest.fill(false);
+    done.fill(false);
 
     cout << "Aguardando conexões..." << endl;
 
@@ -122,8 +121,6 @@ int main(int argc, char *argv[])
       {
         newSocket = server->accept(poolSize);
 
-        //Verificar o que acontece se backlog + 1 clientes se conectarem
-        // Codigo esta aceitando mais de uma requisicao de um mesmo cliente...
         if (connected.size() < backlog)
         {
           server->add(newSocket, POLLIN|POLLOUT);
@@ -145,42 +142,48 @@ int main(int argc, char *argv[])
               break;
 
             request[i].assign(buffer, rc[i]);
-            handler[i] = new RequestHandler(request[i]);
+            handler.push_back(new RequestHandler(request[i]));
 
             hasRequest[i] = true;
           }
 
-          rc[i] = connected[i]->readLine(buffer, poolSize);
+          while (true)
+          {
+            rc[i] = connected[i]->readLine(buffer, poolSize);
 
-          if (rc[i] > 0)
+            if (rc[i] <= 0)
+              break;
+
             handler[i]->addHeader(buffer);
-          else
-            break;
 
-          if (strncmp(buffer, "\r\n", strlen("\r\n")))
-            continue;
+            if (!strncmp(buffer, "\r\n", strlen("\r\n")))
+              break;
 
-          if (strncmp(buffer, "\n", strlen("\n")))
-            continue;
+            if (!strncmp(buffer, "\n", strlen("\n")))
+              break;
+          }
         }
 
-        if(server->canSend(connected[i]) && hasRequest[i])
+        if (server->canSend(connected[i]) && hasRequest[i])
         {
           rc[i] = handler[i]->validate(root);
 
-          if(rc[i] != 0)
-            handler[i]->respond(rc[i], root, connected[i]);
+          if (rc[i] != 0)
+            done[i] = handler[i]->respond(rc[i], root, connected[i]);
 
-          //Terminou a requisicao do cliente
-          server->remove(connected[i]);
+          if (done[i])
+          {
+            server->remove(connected[i]);
 
-          CLEAN(connected[i]);
-          CLEAN(handler[i]);
+            CLEAN(connected[i]);
+            CLEAN(handler[i]);
 
-          connected.erase(connected.begin() + i);
+            handler.erase(handler.begin() + i);
+            connected.erase(connected.begin() + i);
 
-          hasRequest[i] = false;
-          connections--;
+            hasRequest[i] = false;
+            connections--;
+          }
         }
       }
     }
