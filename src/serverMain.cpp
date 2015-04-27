@@ -88,6 +88,14 @@ int main(int argc, char *argv[])
 
   try
   {
+    // Inicializando os vetores com variaveis de controle
+    connected.reserve(backlog);
+    fill(connected.begin(), connected.end(), nullptr);
+    handler.reserve(backlog);
+    fill(handler.begin(), handler.end(), nullptr);
+    hasRequest.reserve(backlog);
+    fill(hasRequest.begin(), hasRequest.end(), false);
+
     // Conexao tipo TCP, IPV4 ou V6, preenchimento automatico de IP
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
@@ -103,12 +111,6 @@ int main(int argc, char *argv[])
     server->listen(backlog);
     server->add(server, POLLIN);
 
-    connected.reserve(backlog);
-    fill(connected.begin(), connected.end(), nullptr);
-    handler.reserve(backlog);
-    fill(handler.begin(), handler.end(), nullptr);
-    hasRequest.reserve(backlog);
-    fill(hasRequest.begin(), hasRequest.end(), false);
   }
   catch (exception &e)
   {
@@ -165,7 +167,7 @@ int main(int argc, char *argv[])
               bad = true;
               break;
             }
-            
+
             handler[i]->addHeader(buffer);
 
             if (!strncmp(buffer, "\r\n", strlen("\r\n")))
