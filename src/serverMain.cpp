@@ -149,15 +149,12 @@ int main(int argc, char *argv[])
           // Pegar a requisição HTTP
           rc[i] = connected[i]->readLine(buffer, poolSize);
 
-          if(rc <= 0)
+          if(rc[i] > 0)
           {
-            bad = true;
-            break;
+            request.assign(buffer, rc[i]);
+            handler.push_back(new RequestHandler(request));
+            cout << "Got request: " << request << endl;
           }
-
-          request.assign(buffer, rc[i]);
-          handler.push_back(new RequestHandler(request));
-          cout << "Got request: " << request << endl;
 
           while (true)
           {
@@ -168,7 +165,7 @@ int main(int argc, char *argv[])
               bad = true;
               break;
             }
-
+            
             handler[i]->addHeader(buffer);
 
             if (!strncmp(buffer, "\r\n", strlen("\r\n")))
