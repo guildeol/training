@@ -31,10 +31,10 @@ void cleanup(int cookie)
 
   CLEAN(server);
 
-  for (int i = 0; i < connections; i++)
+  for (unsigned int i = 0; i < handler.size(); i++)
     CLEAN(handler[i]);
 
-  for (int i = 0; i < connections; i++)
+  for (unsigned int i = 0; i < connected.size(); i++)
     CLEAN(connected[i]);
 
   return;
@@ -51,8 +51,8 @@ int main(int argc, char *argv[])
   ClientSocket *newSocket = NULL;
 
   string request[backlog];
-  array<bool, backlog> hasRequest;
-  array<bool, backlog> done;
+  vector<bool> hasRequest;
+  bool done;
 
   string root("./");
   string port("8080");
@@ -107,12 +107,21 @@ int main(int argc, char *argv[])
     fill(connected.begin(), connected.end(), nullptr);
     handler.reserve(backlog);
     fill(handler.begin(), handler.end(), nullptr);
-
-    hasRequest.fill(false);
-    done.fill(false);
+    hasRequest.reserve(backlog);
+    fill(hasRequest.begin(), hasRequest.end(), false);
+  }
+  catch (exception &e)
+  {
+    cout << "Erro durante a inicialização do servidor..." << endl;
+    cout << e.what() << endl;
+    cout << "Saindo..." << endl;
+    return -2;
+  }
 
     cout << "Aguardando conexões..." << endl;
 
+  try
+  {
     while (true)
     {
       server->poll();
@@ -125,7 +134,7 @@ int main(int argc, char *argv[])
         {
           server->add(newSocket, POLLIN|POLLOUT);
           connected.push_back(newSocket);
-          connections++;
+          hasRequest.push_back(false);
         }
       }
 
@@ -134,18 +143,13 @@ int main(int argc, char *argv[])
         if (server->canRead(connected[i]))
         {
           // Pegar a requisição HTTP
-          if (!hasRequest[i])
-          {
-            rc[i] = connected[i]->readLine(buffer, poolSize);
+          rc[i] = connected[i]->readLine(buffer, poolSize);
 
-            if(rc <= 0)
-              break;
+          if(rc <= 0)
+            break;
 
-            request[i].assign(buffer, rc[i]);
-            handler.push_back(new RequestHandler(request[i]));
-
-            hasRequest[i] = true;
-          }
+          request[i].assign(buffer, rc[i]);
+          handler.push_back(new RequestHandler(request[i]));
 
           while (true)
           {
@@ -162,16 +166,17 @@ int main(int argc, char *argv[])
             if (!strncmp(buffer, "\n", strlen("\n")))
               break;
           }
+
+          rc[i] = handler[i]->validate(root);
+          hasRequest[i] = true;
         }
 
         if (server->canSend(connected[i]) && hasRequest[i])
         {
-          rc[i] = handler[i]->validate(root);
-
           if (rc[i] != 0)
-            done[i] = handler[i]->respond(rc[i], root, connected[i]);
+            done = handler[i]->respond(rc[i], root, connected[i]);
 
-          if (done[i])
+          if (done)
           {
             server->remove(connected[i]);
 
@@ -180,9 +185,7 @@ int main(int argc, char *argv[])
 
             handler.erase(handler.begin() + i);
             connected.erase(connected.begin() + i);
-
-            hasRequest[i] = false;
-            connections--;
+            hasRequest.erase(hasRequest.begin() + i);
           }
         }
       }

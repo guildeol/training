@@ -62,7 +62,7 @@ RequestHandler::RequestHandler(std::string &request):
   //Copia todos os caracteres antes do primeiro \r ou \n
   this->protocol.assign(request, second + 1  , end - second - 1);
 
-  this->bucket.setRate(2500000);
+  this->bucket.setRate(5000000);
 }
 
 /*!
