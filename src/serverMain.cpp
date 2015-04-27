@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
 
   ClientSocket *newSocket = NULL;
 
-  string request[backlog];
+  string request;
   vector<bool> hasRequest;
   bool done;
 
@@ -118,7 +118,9 @@ int main(int argc, char *argv[])
     return -2;
   }
 
-    cout << "Aguardando conexões..." << endl;
+  cout << "Aguardando conexões..." << endl;
+
+  bool bad = false;
 
   try
   {
@@ -140,23 +142,32 @@ int main(int argc, char *argv[])
 
       for (unsigned int i = 0; i < connected.size(); i++)
       {
+        server->poll();
+
         if (server->canRead(connected[i]))
         {
           // Pegar a requisição HTTP
           rc[i] = connected[i]->readLine(buffer, poolSize);
 
           if(rc <= 0)
+          {
+            bad = true;
             break;
+          }
 
-          request[i].assign(buffer, rc[i]);
-          handler.push_back(new RequestHandler(request[i]));
+          request.assign(buffer, rc[i]);
+          handler.push_back(new RequestHandler(request));
+          cout << "Got request: " << request << endl;
 
           while (true)
           {
             rc[i] = connected[i]->readLine(buffer, poolSize);
 
             if (rc[i] <= 0)
+            {
+              bad = true;
               break;
+            }
 
             handler[i]->addHeader(buffer);
 
@@ -167,26 +178,31 @@ int main(int argc, char *argv[])
               break;
           }
 
-          rc[i] = handler[i]->validate(root);
-          hasRequest[i] = true;
+          if (!bad)
+          {
+            rc[i] = handler[i]->validate(root);
+            hasRequest[i] = true;
+          }
         }
 
-        if (server->canSend(connected[i]) && hasRequest[i])
+        if (server->canSend(connected[i]) && hasRequest[i] && !bad)
         {
           if (rc[i] != 0)
             done = handler[i]->respond(rc[i], root, connected[i]);
+        }
 
-          if (done)
-          {
-            server->remove(connected[i]);
+        if (done || bad)
+        {
+          server->remove(connected[i]);
 
-            CLEAN(connected[i]);
-            CLEAN(handler[i]);
+          CLEAN(connected[i]);
+          CLEAN(handler[i]);
 
-            handler.erase(handler.begin() + i);
-            connected.erase(connected.begin() + i);
-            hasRequest.erase(hasRequest.begin() + i);
-          }
+          handler.erase(handler.begin() + i);
+          connected.erase(connected.begin() + i);
+          hasRequest.erase(hasRequest.begin() + i);
+          done = false;
+          bad = false;
         }
       }
     }

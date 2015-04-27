@@ -41,6 +41,8 @@ RequestHandler::RequestHandler(std::string &request):
 {
   using namespace std;
 
+  this->bucket.setRate(5000000);
+
   int spaces = std::count(request.begin(), request.end(), ' ');
 
   if (spaces != 2)
@@ -61,8 +63,6 @@ RequestHandler::RequestHandler(std::string &request):
 
   //Copia todos os caracteres antes do primeiro \r ou \n
   this->protocol.assign(request, second + 1  , end - second - 1);
-
-  this->bucket.setRate(5000000);
 }
 
 /*!
@@ -190,13 +190,17 @@ void RequestHandler::fetch(int code, std:: string &root)
 {
   using namespace std;
 
+  string fileName;
+
   if (code == 200)
-    this->file.open(root + this->resource, ios::binary);
+    fileName.assign(root + this->resource);
   else
-    this->file.open(responseFolder + to_string(code)+ ".html", ios::binary);
+    fileName.assign(responseFolder + to_string(code)+ ".html");
+
+  this->file.open(fileName, ios::binary);
 
   if(!this->file.good())
-    throw runtime_error(std::string("Erro ao abrir o arquivo de resposta!"));
+    throw runtime_error(std::string("Erro ao abrir o arquivo " + fileName));
 
   this->file.seekg(0, this->file.end);
   this->fileLength = file.tellg();
@@ -205,7 +209,7 @@ void RequestHandler::fetch(int code, std:: string &root)
 
 /*!
  * \brief Formata a data e hora no formado do RFC 1123.
- * \param[int] t referencia para struct contendo os dados de data e hora.
+ * \param[int] t struct contendo os dados de data e hora.
  * \return string formatada com data.
  */
 std::string RequestHandler::timeToString(struct tm &t)
