@@ -14,7 +14,7 @@ using namespace std;
 ServerSocket *server = nullptr;
 
 vector<RequestHandler *> handler;
-vector<ClientSocket *> connected;
+vector<ClientSocket *> clients;
 int connections = 0;
 
 #define CLEAN(pointer)    \
@@ -34,15 +34,15 @@ void cleanup(int cookie)
   for (unsigned int i = 0; i < handler.size(); i++)
     CLEAN(handler[i]);
 
-  for (unsigned int i = 0; i < connected.size(); i++)
-    CLEAN(connected[i]);
+  for (unsigned int i = 0; i < clients.size(); i++)
+    CLEAN(clients[i]);
 
   return;
 }
 
 int main(int argc, char *argv[])
 {
-  const int backlog = 10;
+  const int backlog = 200;
 
   int rc[backlog];
 
@@ -89,8 +89,8 @@ int main(int argc, char *argv[])
   try
   {
     // Inicializando os vetores com variaveis de controle
-    connected.reserve(backlog);
-    fill(connected.begin(), connected.end(), nullptr);
+    clients.reserve(backlog);
+    fill(clients.begin(), clients.end(), nullptr);
     handler.reserve(backlog);
     fill(handler.begin(), handler.end(), nullptr);
     hasRequest.reserve(backlog);
@@ -128,28 +128,23 @@ int main(int argc, char *argv[])
   {
     while (true)
     {
-      server->poll();
+      server->poll(0);
 
       if (server->canRead(server))
       {
         newSocket = server->accept(poolSize);
-
-        if (connected.size() < backlog)
-        {
-          server->add(newSocket, POLLIN|POLLOUT);
-          connected.push_back(newSocket);
-          hasRequest.push_back(false);
-        }
+        server->add(newSocket, POLLIN);
+        clients.push_back(newSocket);
+        hasRequest.push_back(false);
       }
 
-      for (unsigned int i = 0; i < connected.size(); i++)
+      for (unsigned int i = 0; i < clients.size(); i++)
       {
-        server->poll();
 
-        if (server->canRead(connected[i]))
+        if (server->canRead(clients[i]))
         {
           // Pegar a requisição HTTP
-          rc[i] = connected[i]->readLine(buffer, poolSize);
+          rc[i] = clients[i]->readLine(buffer, poolSize);
 
           if(rc[i] > 0)
           {
@@ -160,7 +155,7 @@ int main(int argc, char *argv[])
 
           while (true)
           {
-            rc[i] = connected[i]->readLine(buffer, poolSize);
+            rc[i] = clients[i]->readLine(buffer, poolSize);
 
             if (rc[i] <= 0)
             {
@@ -184,21 +179,21 @@ int main(int argc, char *argv[])
           }
         }
 
-        if (server->canSend(connected[i]) && hasRequest[i] && !bad)
+        if (hasRequest[i] && !bad)
         {
           if (rc[i] != 0)
-            done = handler[i]->respond(rc[i], root, connected[i]);
+            done = handler[i]->respond(rc[i], root, clients[i]);
         }
 
         if (done || bad)
         {
-          server->remove(connected[i]);
+          server->remove(clients[i]);
 
-          CLEAN(connected[i]);
+          CLEAN(clients[i]);
           CLEAN(handler[i]);
 
           handler.erase(handler.begin() + i);
-          connected.erase(connected.begin() + i);
+          clients.erase(clients.begin() + i);
           hasRequest.erase(hasRequest.begin() + i);
           done = false;
           bad = false;

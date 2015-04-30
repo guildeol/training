@@ -177,8 +177,8 @@ bool RequestHandler::respond(int code, std::string &root, ClientSocket *socket)
 }
 
 /*!
- * \brief Busca o arquivo de resposta adequado, com base no codigo e nos nome contido
- * em this->resource.
+ * \brief Busca o arquivo de resposta adequado, com base no codigo e nos nomes
+ * contidos em this->resource.
  * \param[out] file referencia para o objeto com os dados do arquivo a ser
  *                  enviado.
  * \param[in] code Codigo da resposta, obtido via validate().
