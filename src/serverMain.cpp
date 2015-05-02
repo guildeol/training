@@ -11,11 +11,17 @@
 
 using namespace std;
 
+#define GETREQUEST 0
+#define GETHEADERS 1
+#define SEND       2
+#define END        3
+
 ServerSocket *server = nullptr;
 
-vector<RequestHandler *> handler;
+vector<RequestHandler *> requestHandlers;
 vector<ClientSocket *> clients;
-int connections = 0;
+vector<int> clientStates;
+vector<int> httpResponse;
 
 #define CLEAN(pointer)    \
   if (pointer != nullptr) \
@@ -31,8 +37,8 @@ void cleanup(int cookie)
 
   CLEAN(server);
 
-  for (unsigned int i = 0; i < handler.size(); i++)
-    CLEAN(handler[i]);
+  for (unsigned int i = 0; i < requestHandlers.size(); i++)
+    CLEAN(requestHandlers[i]);
 
   for (unsigned int i = 0; i < clients.size(); i++)
     CLEAN(clients[i]);
@@ -44,14 +50,11 @@ int main(int argc, char *argv[])
 {
   const int backlog = 200;
 
-  int rc[backlog];
-
   struct addrinfo hints;
 
   ClientSocket *newSocket = NULL;
 
   string request;
-  vector<bool> hasRequest;
   bool done;
 
   string root("./");
@@ -89,12 +92,8 @@ int main(int argc, char *argv[])
   try
   {
     // Inicializando os vetores com variaveis de controle
-    clients.reserve(backlog);
-    fill(clients.begin(), clients.end(), nullptr);
-    handler.reserve(backlog);
-    fill(handler.begin(), handler.end(), nullptr);
-    hasRequest.reserve(backlog);
-    fill(hasRequest.begin(), hasRequest.end(), false);
+    requestHandlers.reserve(backlog);
+    fill(requestHandlers.begin(), requestHandlers.end(), nullptr);
 
     // Conexao tipo TCP, IPV4 ou V6, preenchimento automatico de IP
     memset(&hints, 0, sizeof hints);
@@ -122,8 +121,6 @@ int main(int argc, char *argv[])
 
   cout << "Aguardando conexões..." << endl;
 
-  bool bad = false;
-
   try
   {
     while (true)
@@ -135,72 +132,69 @@ int main(int argc, char *argv[])
         newSocket = server->accept(poolSize);
         server->add(newSocket, POLLIN);
         clients.push_back(newSocket);
-        hasRequest.push_back(false);
+        clientStates.push_back(GETREQUEST);
       }
 
       for (unsigned int i = 0; i < clients.size(); i++)
       {
+        int bytesRead = 0;
 
-        if (server->canRead(clients[i]))
+        switch (clientStates[i])
         {
-          // Pegar a requisição HTTP
-          rc[i] = clients[i]->readLine(buffer, poolSize);
-
-          if(rc[i] > 0)
-          {
-            request.assign(buffer, rc[i]);
-            handler.push_back(new RequestHandler(request));
-            cout << "Got request: " << request << endl;
-          }
-
-          while (true)
-          {
-            rc[i] = clients[i]->readLine(buffer, poolSize);
-
-            if (rc[i] <= 0)
+          case GETREQUEST:
+            if (server->canRead(clients[i]))
             {
-              bad = true;
-              break;
-            }
+              bytesRead = clients[i]->readLine(buffer, poolSize);
 
-            handler[i]->addHeader(buffer);
+              if(bytesRead <= 0)
+                clientStates[i] = END;
+
+              request.assign(buffer, bytesRead);
+              requestHandlers.push_back(new RequestHandler(request, root));
+              cout << "Got request: " << request << endl;
+
+              clientStates[i] = GETHEADERS;
+            }
+            break;
+
+          case GETHEADERS:
+            bytesRead = clients[i]->readLine(buffer, poolSize);
+
+            if(bytesRead <= 0)
+              clientStates[i] = END;
+
+            requestHandlers[i]->addHeader(buffer);
 
             if (!strncmp(buffer, "\r\n", strlen("\r\n")))
-              break;
+              clientStates[i] = SEND;
 
             if (!strncmp(buffer, "\n", strlen("\n")))
-              break;
-          }
+              clientStates[i] = SEND;
 
-          if (!bad)
-          {
-            rc[i] = handler[i]->validate(root);
-            hasRequest[i] = true;
-          }
-        }
+            break;
 
-        if (hasRequest[i] && !bad)
-        {
-          if (rc[i] != 0)
-            done = handler[i]->respond(rc[i], root, clients[i]);
-        }
+          case SEND:
+            done = requestHandlers[i]->respond(clients[i]);
 
-        if (done || bad)
-        {
+            if (done)
+              clientStates[i] = END;
+            break;
+
+          case END:
+
           server->remove(clients[i]);
+            CLEAN(clients[i]);
+            CLEAN(requestHandlers[i]);
 
-          CLEAN(clients[i]);
-          CLEAN(handler[i]);
-
-          handler.erase(handler.begin() + i);
-          clients.erase(clients.begin() + i);
-          hasRequest.erase(hasRequest.begin() + i);
-          done = false;
-          bad = false;
+            requestHandlers.erase(requestHandlers.begin() + i);
+            clients.erase(clients.begin() + i);
+            clientStates.erase(clientStates.begin() + i);
+            break;
         }
       }
     }
   }
+
   catch (exception &e)
   {
     cout << e.what() << endl;

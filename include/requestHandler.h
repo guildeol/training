@@ -35,29 +35,31 @@ class RequestHandler
 {
 public:
 
-  RequestHandler(std::string &request);
-
-  int validate(std::string &root);
+  RequestHandler(std::string &request, std::string &root);
 
   void addHeader(char *header);
 
-  bool respond(int code, std::string &root, ClientSocket *socket);
+  bool respond(ClientSocket *socket);
 
   std::string method;
   std::string resource;
   std::string protocol;
 
 private:
+  int validate();
 
-  void fetch(int code, std::string &root);
+  void fetch();
   std::string timeToString(struct tm &t);
 
-  void sendHeaders(ClientSocket *socket, int code, int fileLength);
+  void sendHeaders(ClientSocket *socket, int fileLength);
 
   std::string knownMethods;
   std::string knownProtocols;
 
   std::vector<std::string> headers;
+
+  int httpResponseCode;
+  std::string root;
 
   std::string responseFolder;
 

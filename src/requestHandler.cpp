@@ -31,7 +31,7 @@ inline bool fileExists (const std::string &filename)
  * Construtor da classe.
  * \param[in] request string representando a requisicao feita ao servidor.
  */
-RequestHandler::RequestHandler(std::string &request):
+RequestHandler::RequestHandler(std::string &request, std::string &root):
   method(""),
   resource(""),
   protocol("HTTP/1.0"),
@@ -63,14 +63,15 @@ RequestHandler::RequestHandler(std::string &request):
 
   //Copia todos os caracteres antes do primeiro \r ou \n
   this->protocol.assign(request, second + 1  , end - second - 1);
+
+  this->root.assign(root);
 }
 
 /*!
  * \brief Metodo para validar os dados passado no construtor
- * \param[in] root Diretorio raiz do servidor.
  * \return Codigo HTTP de acordo com o avaliado.
  */
-int RequestHandler::validate(std::string &root)
+int RequestHandler::validate()
 {
   using namespace std;
 
@@ -89,7 +90,7 @@ int RequestHandler::validate(std::string &root)
   if (this->resource.find("../") != std::string::npos)
     return FORBIDDEN;
 
-  if (!fileExists(root + this->resource))
+  if (!fileExists(this->root + this->resource))
     return NOT_FOUND;
 
   // Checando os headers
@@ -127,14 +128,14 @@ void RequestHandler::addHeader(char *header)
 
 /*!
  * \brief Envia resposta de acordo com o protocol HTTP para o socket especificado.
- * \param[in] code Codigo da resposta, obtido via validate().
- * \param[in] root Diretorio raiz do servido.
  * \param[in] socket Socket pelo qual a resposta deve ser enviada.
  * \throw runtime_error em caso de falha.
  */
-bool RequestHandler::respond(int code, std::string &root, ClientSocket *socket)
+bool RequestHandler::respond(ClientSocket *socket)
 {
   using namespace std;
+
+  this->httpResponseCode = this->validate();
 
   const int blockSize = 512;
   char buffer[blockSize];
@@ -143,8 +144,8 @@ bool RequestHandler::respond(int code, std::string &root, ClientSocket *socket)
 
   if (this->totalSent == 0)
   {
-    this->fetch(code, root);
-    this->sendHeaders(socket, code, this->fileLength);
+    this->fetch();
+    this->sendHeaders(socket, this->fileLength);
   }
 
   if(this->bucket.consume(blockSize))
@@ -179,23 +180,18 @@ bool RequestHandler::respond(int code, std::string &root, ClientSocket *socket)
 /*!
  * \brief Busca o arquivo de resposta adequado, com base no codigo e nos nomes
  * contidos em this->resource.
- * \param[out] file referencia para o objeto com os dados do arquivo a ser
- *                  enviado.
- * \param[in] code Codigo da resposta, obtido via validate().
- * \param[length] Recebe o tamanho do arquivo a ser enviado.
- * \param[in] root Diretorio raiz do servidor.
  * \throw runtime_error em caso de falha.
  */
-void RequestHandler::fetch(int code, std:: string &root)
+void RequestHandler::fetch()
 {
   using namespace std;
 
   string fileName;
 
-  if (code == 200)
-    fileName.assign(root + this->resource);
+  if (this->httpResponseCode == 200)
+    fileName.assign(this->root + this->resource);
   else
-    fileName.assign(responseFolder + to_string(code)+ ".html");
+    fileName.assign(responseFolder + to_string(this->httpResponseCode)+ ".html");
 
   this->file.open(fileName, ios::binary);
 
@@ -227,7 +223,7 @@ std::string RequestHandler::timeToString(struct tm &t)
  * \param[int] socket Socket pelo qual os dados serão enviados.
  * \param[length] Recebe o tamanho do arquivo a ser enviado.
  */
-void RequestHandler::sendHeaders(ClientSocket *socket, int code, int fileLength)
+void RequestHandler::sendHeaders(ClientSocket *socket, int fileLength)
 {
   time_t now;
   struct tm *t;
@@ -237,12 +233,12 @@ void RequestHandler::sendHeaders(ClientSocket *socket, int code, int fileLength)
   t = gmtime(&now);
   timeString = timeToString(*t);
 
-  socket->send(this->protocol + " " + std::to_string(code) + " " + reason[code]
-               + "\r\n");
+  socket->send(this->protocol + " " + std::to_string(this->httpResponseCode) +
+               " " + reason[this->httpResponseCode] + "\r\n");
   socket->send("Date: " + timeString + "\r\n");
   socket->send("Server: aker-training/0.1\r\n");
 
-  if(code == OK)
+  if(this->httpResponseCode == OK)
     socket->send("Content-Type: application/octet-stream\r\n");
   else
     socket->send("Content-Type: text/html\r\n");
