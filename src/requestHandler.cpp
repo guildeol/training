@@ -131,26 +131,33 @@ void RequestHandler::addHeader(char *header)
  * \param[in] socket Socket pelo qual a resposta deve ser enviada.
  * \throw runtime_error em caso de falha.
  */
-bool RequestHandler::respond(ClientSocket *socket)
+int RequestHandler::respond(ClientSocket *socket)
 {
   using namespace std;
 
   this->httpResponseCode = this->validate();
 
-  const int blockSize = 512;
+  const int blockSize = 1024;
   char buffer[blockSize];
 
-  bool done = false;
+  int done = 1;
 
   if (this->totalSent == 0)
   {
-    this->fetch();
-    this->sendHeaders(socket, this->fileLength);
+    try
+    {
+      this->fetch();
+      this->sendHeaders(socket, this->fileLength);
+    }
+    catch (exception &e)
+    {
+      throw runtime_error(std::string("Erro ao abrir arquivo de resposta: ")
+                          + strerror(errno));
+    }
   }
 
   if(this->bucket.consume(blockSize))
   {
-
     try
     {
       this->file.read(buffer, blockSize);
@@ -160,10 +167,13 @@ bool RequestHandler::respond(ClientSocket *socket)
     }
     catch (exception &e)
     {
-      throw runtime_error(std::string("Erro ao enviar arquivo de resposta: ")
-                          + strerror(errno));
+      this->totalSent = 0;
+      this->file.close();
+      return 0;
     }
   }
+  else
+    done = -1;
 
   bucket.replenish();
 
@@ -171,7 +181,7 @@ bool RequestHandler::respond(ClientSocket *socket)
   {
     this->totalSent = 0;
     this->file.close();
-    done = true;
+    done = 0;
   }
 
   return done;

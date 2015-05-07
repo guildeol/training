@@ -5,6 +5,8 @@
 #include <cerrno>
 #include <cstdio>
 
+#include <signal.h>
+
 /*!
  * Construtor da classe, prepara as estruturas necessarias para conexao
  * atraves do socket utilizando por padrao conexao TCP e a porta 80.
@@ -198,6 +200,30 @@ int ServerSocket::poll(int timeout)
   return rc;
 }
 
+int ServerSocket::ppoll(int timeout)
+{
+  sigset_t signals;
+  struct timespec timeoutStruct;
+  int rc = 0;
+
+  // Multiplicando por 1 milhao para manter o padrao de timeout em ms.
+  timeoutStruct.tv_sec = 0;
+  timeoutStruct.tv_nsec = timeout*1000000;
+
+  ::sigfillset(&signals);
+  ::sigdelset(&signals, SIGALRM);
+  ::sigdelset(&signals, SIGINT);
+
+  if (timeout == -1)
+    rc = ::ppoll(this->descriptors, this->maxDescriptors, NULL, &signals);
+  else
+    rc = ::ppoll(this->descriptors, this->maxDescriptors, &timeoutStruct, &signals);
+
+  if(rc == -1)
+    throw std::runtime_error(std::string("Erro em ppoll: ") + strerror(errno));
+
+  return rc;
+}
 
 /*!
 * \brief Avalia o resultado de poll para saber se um socket possui dados
@@ -223,6 +249,36 @@ bool ServerSocket::canRead(Socket *socket)
   }
 
   return false;
+}
+
+void ServerSocket::watchEvents(Socket *socket, char events)
+{
+  if(socket == NULL)
+    throw std::invalid_argument(std::string("Erro: parametro socket nulo!"));
+
+  for (int i = 0; i < this->maxDescriptors; i++)
+  {
+    if (socket->socketDescriptor == this->descriptors[i].fd)
+    {
+      this->descriptors[i].events |= events;
+      break;
+    }
+  }
+}
+
+void ServerSocket::unwatchEvents(Socket *socket, char events)
+{
+  if(socket == NULL)
+    throw std::invalid_argument(std::string("Erro: parametro socket nulo!"));
+
+  for (int i = 0; i < this->maxDescriptors; i++)
+  {
+    if (socket->socketDescriptor == this->descriptors[i].fd)
+    {
+      this->descriptors[i].events &= ~events;
+      break;
+    }
+  }
 }
 
 /*!

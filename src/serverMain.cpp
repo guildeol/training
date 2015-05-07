@@ -20,8 +20,11 @@ ServerSocket *server = nullptr;
 
 vector<RequestHandler *> requestHandlers;
 vector<ClientSocket *> clients;
+vector<ClientSocket *> onHold;
 vector<int> clientStates;
 vector<int> httpResponse;
+
+bool isSet = false;
 
 #define CLEAN(pointer)    \
   if (pointer != nullptr) \
@@ -30,11 +33,36 @@ vector<int> httpResponse;
     pointer = nullptr;    \
   }
 
+inline bool isEmptyLine(char *buffer)
+{
+  if (strncmp(buffer, "\r\n", strlen("\r\n")) == 0)
+    return true;
+
+  if (strncmp(buffer, "\n", strlen("\n")) == 0)
+    return true;
+
+  return false;
+}
+
+void restore(int cookie)
+{
+  using namespace std;
+
+  signal(SIGALRM, SIG_IGN);
+
+  for (unsigned int i = 0; i < onHold.size(); i++)
+  {
+    server->watchEvents(onHold[i], POLLOUT);
+    onHold.erase(onHold.begin() + i);
+  }
+
+  signal(SIGALRM, restore);
+
+  return;
+}
 
 void cleanup(int cookie)
 {
-  cout << "\nInterrompendo o servidor..." << endl;
-
   CLEAN(server);
 
   for (unsigned int i = 0; i < requestHandlers.size(); i++)
@@ -55,7 +83,7 @@ int main(int argc, char *argv[])
   ClientSocket *newSocket = NULL;
 
   string request;
-  bool done;
+  int done = 1;
 
   string root("./");
   string port("8080");
@@ -66,7 +94,7 @@ int main(int argc, char *argv[])
   string header;
 
   signal(SIGINT, cleanup);
-
+  signal(SIGALRM, restore);
   /*
    * Diretorios devem ter o '/' ao final de seus nomes. Os arquivos requisitados
    * devem ser validados em relação ao seu formato, que nao deve possuir
@@ -109,7 +137,6 @@ int main(int argc, char *argv[])
     server->bind();
     server->listen(backlog);
     server->add(server, POLLIN);
-
   }
   catch (exception &e)
   {
@@ -125,12 +152,19 @@ int main(int argc, char *argv[])
   {
     while (true)
     {
-      server->poll(0);
+      try
+      {
+        server->ppoll();
+      }
+      catch(...)
+      {
+        restore(0);
+      }
 
       if (server->canRead(server))
       {
         newSocket = server->accept(poolSize);
-        server->add(newSocket, POLLIN);
+        server->add(newSocket, POLLIN|POLLOUT);
         clients.push_back(newSocket);
         clientStates.push_back(GETREQUEST);
       }
@@ -165,19 +199,34 @@ int main(int argc, char *argv[])
 
             requestHandlers[i]->addHeader(buffer);
 
-            if (!strncmp(buffer, "\r\n", strlen("\r\n")))
+            if (isEmptyLine(buffer))
+            {
               clientStates[i] = SEND;
-
-            if (!strncmp(buffer, "\n", strlen("\n")))
-              clientStates[i] = SEND;
+              server->watchEvents(clients[i], POLLOUT);
+            }
 
             break;
 
           case SEND:
-            done = requestHandlers[i]->respond(clients[i]);
 
-            if (done)
-              clientStates[i] = END;
+            if (server->canSend(clients[i]))
+            {
+              done = requestHandlers[i]->respond(clients[i]);
+
+              switch (done)
+              {
+                case -1:
+                  server->unwatchEvents(clients[i], POLLOUT);
+                  onHold.push_back(clients[i]);
+                  ualarm(100000, 0);
+                  break;
+
+                case 0:
+                  clientStates[i] = END;
+                  break;
+              }
+            }
+
             break;
 
           case END:
@@ -194,10 +243,10 @@ int main(int argc, char *argv[])
       }
     }
   }
-
   catch (exception &e)
   {
     cout << e.what() << endl;
+    cout << "Encerrando.." << endl;
   }
 
   CLEAN(server);

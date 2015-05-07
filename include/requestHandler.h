@@ -39,7 +39,7 @@ public:
 
   void addHeader(char *header);
 
-  bool respond(ClientSocket *socket);
+  int respond(ClientSocket *socket);
 
   std::string method;
   std::string resource;

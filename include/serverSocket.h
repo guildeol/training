@@ -46,6 +46,10 @@ public:
   bool canRead(Socket *socket);
 
   int poll(int timeout = -1);
+  int ppoll(int timeout = -1);
+
+  void watchEvents(Socket *socket, char events);
+  void unwatchEvents(Socket *socket, char events);
 
 private:
 
